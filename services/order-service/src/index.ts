@@ -20,11 +20,16 @@ app.get("/orders", async () => {
 });
 
 // Create order
-app.post("/orders", async (req) => {
+app.post("/orders", async (req, reply) => {
   const body = req.body as { items: OrderItem[] };
 
+  // todo add more and proper validation, like sanitize inputs
+  if (!body.items || body.items.length === 0) {
+    return reply.status(400).send({ error: "Order must contain at least one item." });
+  }
+
   const order: Order = {
-    id: Date.now().toString(),
+    id: Bun.randomUUIDv7(),
     items: body.items,
     status: OrderStatus.PENDING,
     createdAt: new Date().toISOString(),
@@ -46,17 +51,28 @@ app.post("/orders", async (req) => {
 });
 
 async function start() {
-  // Connect to RabbitMQ
-  const rabbitMqURL = process.env.RABBITMQ_URL || "amqp://admin:admin@localhost:5672";
-  const connection = await amqplib.connect(rabbitMqURL);
-  channel = await connection.createChannel();
-  await channel.assertQueue(ORDER_EVENTS);
+  try {
+    // Connect to RabbitMQ
+    const rabbitMqURL = process.env.RABBITMQ_URL || "amqp://admin:admin@localhost:5672";
+    const connection = await amqplib.connect(rabbitMqURL);
+    channel = await connection.createChannel();
+    const res = await channel.assertQueue(ORDER_EVENTS);
 
-  console.log("✅ Connected to RabbitMQ");
+    if (res.queue) {
+      console.log(`✅ RabbitMQ queue '${res.queue}' is ready`);
+    } else {
+      throw new Error("Failed to assert RabbitMQ queue");
+    }
 
-  // Start HTTP server
-  await app.listen({ port: 3001 });
-  console.log("🚀 Order Service running on http://localhost:3001");
+    console.log("✅ Connected to RabbitMQ");
+
+    // Start HTTP server
+    await app.listen({ port: 3001 });
+    console.log("🚀 Order Service running on http://localhost:3001");
+  } catch (error) {
+    console.error("Failed to start Order Service:", error);
+    process.exit(1);
+  }
 }
 
 start();
