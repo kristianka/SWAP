@@ -1,0 +1,16 @@
+{
+  "items": [
+    {
+      "product": "Widget Pro",
+      "quantity": 2
+    },
+    {
+      "product": "Gadget Max",
+      "quantity": 1
+    },
+    {
+      "product": "Tool Set",
+      "quantity": 3
+    }
+  ]
+}
