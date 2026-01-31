@@ -1,5 +1,8 @@
 # SWAP
+
 Software Architecture Project 2026 - University of Helsinki
 
+## Services
 
-test
+- Order service
+- TBA
