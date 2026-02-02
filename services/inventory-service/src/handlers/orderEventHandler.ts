@@ -19,7 +19,7 @@ export const handleOrderEvent = async (event: OrderCreatedEvent | PaymentFailedE
       await handlePaymentFailed(event);
       break;
     default:
-      console.warn(`Unknown event type: ${(event as any).type}`);
+      console.warn(`Unknown event type: ${event}`);
   }
 };
 
