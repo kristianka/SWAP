@@ -1,30 +1,28 @@
 import Fastify from "fastify";
 import { connectToRabbitMQ } from "./rabbitmq";
 import { registerHealthRoutes } from "./routes/health";
-import { registerOrderRoutes } from "./routes/orders";
-import { startInventoryConsumer } from "./consumers/inventoryConsumer";
+import { startOrderConsumer } from "./consumers/orderConsumer";
 
 const app = Fastify();
 
 async function start() {
   try {
-    const port = process.env.PORT || 3001;
+    const port = process.env.PORT || 3002;
 
     // Connect to RabbitMQ
     const channel = await connectToRabbitMQ();
-    
-    // Start consuming inventory events
-    await startInventoryConsumer(channel);
 
     // Register routes
     await registerHealthRoutes(app);
-    await registerOrderRoutes(app);
+
+    // Start consumers
+    startOrderConsumer(channel);
 
     // Start HTTP server
     await app.listen({ port: Number(port) });
-    console.log(`🚀 Order Service running on http://localhost:${port}`);
+    console.log(`🚀 Inventory Service running on http://localhost:${port}`);
   } catch (error) {
-    console.error("Failed to start Order Service:", error);
+    console.error("Failed to start Inventory Service:", error);
     process.exit(1);
   }
 }

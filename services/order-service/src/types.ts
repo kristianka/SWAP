@@ -1,4 +1,4 @@
-import type { OrderEventType, OrderStatus } from "./constants";
+import type { OrderEventType, OrderStatus, InventoryEventType } from "./constants";
 
 export interface OrderItem {
   product: string;
@@ -15,4 +15,20 @@ export interface Order {
 export interface OrderEvent {
   type: OrderEventType;
   data: Order;
+}
+
+export interface InventoryReservedEvent {
+  type: InventoryEventType.INVENTORY_RESERVED;
+  data: {
+    orderId: string;
+    items: OrderItem[];
+  };
+}
+
+export interface InventoryFailedEvent {
+  type: InventoryEventType.INVENTORY_FAILED;
+  data: {
+    orderId: string;
+    reason: string;
+  };
 }

@@ -1,15 +1,15 @@
 {
   "items": [
     {
-      "product": "Widget Pro",
+      "product": "prod-001",
       "quantity": 2
     },
     {
-      "product": "Gadget Max",
+      "product": "prod-002",
       "quantity": 1
     },
     {
-      "product": "Tool Set",
+      "product": "prod-003",
       "quantity": 3
     }
   ]
