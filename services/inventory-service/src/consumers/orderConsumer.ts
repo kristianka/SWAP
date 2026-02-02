@@ -13,12 +13,19 @@ export const startOrderConsumer = (channel: Channel) => {
       const event: OrderCreatedEvent | PaymentFailedEvent = JSON.parse(msg.content.toString());
       await handleOrderEvent(event);
 
-      // Acknowledge the message after successful processing
+      // acknowledge the message after successful processing
       channel.ack(msg);
     } catch (error) {
       console.error("Error processing message:", error);
-      // Reject and requeue the message if processing fails
-      channel.nack(msg, false, true);
+
+      // nack the message and requeue it for retry, unless it has been redelivered
+      if (msg.fields.redelivered) {
+        console.error("Message failed after retry, discarding:", msg.content.toString());
+        channel.nack(msg, false, false);
+      } else {
+        console.log("Requeuing message for retry");
+        channel.nack(msg, false, true);
+      }
     }
   });
 

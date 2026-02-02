@@ -18,7 +18,15 @@ export const startInventoryConsumer = async (channel: Channel) => {
         channel.ack(msg);
       } catch (error) {
         console.error("Error processing inventory event:", error);
-        channel.nack(msg, false, false);
+
+        // nack the message and requeue it for retry, unless it has been redelivered
+        if (msg.fields.redelivered) {
+          console.error("Message failed after retry, discarding:", msg.content.toString());
+          channel.nack(msg, false, false);
+        } else {
+          console.log("Requeuing message for retry");
+          channel.nack(msg, false, true);
+        }
       }
     }
   });
