@@ -7,6 +7,11 @@ const app = Fastify();
 
 async function start() {
   try {
+    const port = process.env.PORT || 3002;
+    if (!port) {
+      throw new Error("PORT environment variable is not set");
+    }
+
     // Connect to RabbitMQ
     const channel = await connectToRabbitMQ();
 
@@ -17,8 +22,8 @@ async function start() {
     startOrderConsumer(channel);
 
     // Start HTTP server
-    await app.listen({ port: 3002 });
-    console.log("🚀 Inventory Service running on http://localhost:3002");
+    await app.listen({ port: Number(port) });
+    console.log(`🚀 Inventory Service running on http://localhost:${port}`);
   } catch (error) {
     console.error("Failed to start Inventory Service:", error);
     process.exit(1);
