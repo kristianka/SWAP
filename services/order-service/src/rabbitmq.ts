@@ -1,5 +1,5 @@
 import amqplib from "amqplib";
-import { ORDER_EVENTS } from "./constants";
+import { ORDER_EVENTS, INVENTORY_EVENTS } from "./constants";
 
 let channel: amqplib.Channel | null = null;
 
@@ -9,13 +9,8 @@ export const connectToRabbitMQ = async (): Promise<amqplib.Channel> => {
   const connection = await amqplib.connect(rabbitMqURL);
   channel = await connection.createChannel();
 
-  const res = await channel.assertQueue(ORDER_EVENTS);
-
-  if (res.queue) {
-    console.log(`✅ RabbitMQ queue '${res.queue}' is ready`);
-  } else {
-    throw new Error("Failed to assert RabbitMQ queue");
-  }
+  await channel.assertQueue(ORDER_EVENTS);
+  await channel.assertQueue(INVENTORY_EVENTS);
 
   console.log("✅ Connected to RabbitMQ");
 

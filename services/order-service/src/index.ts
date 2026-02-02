@@ -2,6 +2,7 @@ import Fastify from "fastify";
 import { connectToRabbitMQ } from "./rabbitmq";
 import { registerHealthRoutes } from "./routes/health";
 import { registerOrderRoutes } from "./routes/orders";
+import { startInventoryConsumer } from "./consumers/inventoryConsumer";
 
 const app = Fastify();
 
@@ -13,7 +14,10 @@ async function start() {
     }
 
     // Connect to RabbitMQ
-    await connectToRabbitMQ();
+    const channel = await connectToRabbitMQ();
+    
+    // Start consuming inventory events
+    await startInventoryConsumer(channel);
 
     // Register routes
     await registerHealthRoutes(app);
