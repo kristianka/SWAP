@@ -8,9 +8,6 @@ const app = Fastify();
 async function start() {
   try {
     const port = process.env.PORT || 3002;
-    if (!port) {
-      throw new Error("PORT environment variable is not set");
-    }
 
     // Connect to RabbitMQ
     const channel = await connectToRabbitMQ();
