@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { PAYMENT_SERVICE } from "../constants";
+import { PAYMENT_SERVICE } from "@swap/shared";
 
 export const registerHealthRoutes = (app: FastifyInstance) => {
   app.get("/health", async () => {

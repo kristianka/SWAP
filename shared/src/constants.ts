@@ -1,4 +1,11 @@
 // ===========================================
+// Service Names
+// ===========================================
+export const ORDER_SERVICE = "order-service";
+export const INVENTORY_SERVICE = "inventory-service";
+export const PAYMENT_SERVICE = "payment-service";
+
+// ===========================================
 // Order Status (state machine for orders)
 // ===========================================
 export enum OrderStatus {
