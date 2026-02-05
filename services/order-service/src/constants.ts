@@ -17,6 +17,12 @@ export enum InventoryEventType {
   INVENTORY_RELEASED = "INVENTORY_RELEASED",
 }
 
+export enum PaymentEventType {
+  PAYMENT_SUCCESS = "PAYMENT_SUCCESS",
+  PAYMENT_FAILED = "PAYMENT_FAILED",
+}
+
 export const ORDER_EVENTS = "order-events";
 export const INVENTORY_EVENTS = "inventory-events";
+export const PAYMENT_EVENTS = "payment-events";
 export const ORDER_SERVICE = "order-service";

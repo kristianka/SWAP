@@ -1,4 +1,9 @@
-import type { OrderEventType, OrderStatus, InventoryEventType } from "./constants";
+import type {
+  OrderEventType,
+  OrderStatus,
+  InventoryEventType,
+  PaymentEventType,
+} from "./constants";
 
 export interface OrderItem {
   product: string;
@@ -32,3 +37,22 @@ export interface InventoryFailedEvent {
     reason: string;
   };
 }
+
+export interface PaymentSuccessEvent {
+  type: PaymentEventType.PAYMENT_SUCCESS;
+  data: {
+    orderId: string;
+    amount: number;
+    transactionId: string;
+  };
+}
+
+export interface PaymentFailedEvent {
+  type: PaymentEventType.PAYMENT_FAILED;
+  data: {
+    orderId: string;
+    reason: string;
+  };
+}
+
+export type OrderCreatedEvent = OrderEvent;
