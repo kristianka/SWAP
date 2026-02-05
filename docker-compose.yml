@@ -9,3 +9,5 @@ services:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: admin
       RABBITMQ_ERLANG_COOKIE: "rabbitmq-cookie-for-ci"
+    tmpfs:
+      - /var/lib/rabbitmq
