@@ -1,0 +1,57 @@
+services:
+  rabbitmq:
+    image: rabbitmq:4.2.3-management
+    container_name: rabbitmq
+    user: "rabbitmq"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: rabbitmq-diagnostics check_port_connectivity
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  order-db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: orders
+      POSTGRES_PASSWORD: dev
+    volumes:
+      - order-db-data:/var/lib/postgresql
+    ports:
+      - "5433:5432"
+
+  inventory-db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: inventory
+      POSTGRES_PASSWORD: dev
+    volumes:
+      - inventory-db-data:/var/lib/postgresql
+    ports:
+      - "5434:5432"
+
+  payment-db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: payments
+      POSTGRES_PASSWORD: dev
+    volumes:
+      - payment-db-data:/var/lib/postgresql
+    ports:
+      - "5435:5432"
+
+  # services run in dev scripts
+
+volumes:
+  rabbitmq-data:
+  order-db-data:
+  inventory-db-data:
+  payment-db-data:

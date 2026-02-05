@@ -25,6 +25,8 @@ services:
       POSTGRES_PASSWORD: dev
     volumes:
       - order-db-data:/var/lib/postgresql
+    ports:
+      - "5433:5432"
 
   inventory-db:
     image: postgres:18
@@ -33,6 +35,8 @@ services:
       POSTGRES_PASSWORD: dev
     volumes:
       - inventory-db-data:/var/lib/postgresql
+    ports:
+      - "5434:5432"
 
   payment-db:
     image: postgres:18
@@ -41,6 +45,8 @@ services:
       POSTGRES_PASSWORD: dev
     volumes:
       - payment-db-data:/var/lib/postgresql
+    ports:
+      - "5435:5432"
 
   order-service:
     build:
