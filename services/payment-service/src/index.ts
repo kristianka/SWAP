@@ -22,7 +22,7 @@ async function start() {
     await registerHealthRoutes(app);
 
     // Start HTTP server
-    await app.listen({ port: Number(port) });
+    await app.listen({ port: Number(port), host: "0.0.0.0" });
     console.log(`🚀 Payment Service running on http://localhost:${port}`);
   } catch (error) {
     console.error("Failed to start Payment Service:", error);
