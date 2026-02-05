@@ -22,20 +22,12 @@ export interface OrderEvent {
   data: Order;
 }
 
-// Incoming events from inventory service
-export interface InventoryReservedEvent {
-  type: InventoryEventType.INVENTORY_RESERVED;
+// Incoming payment request from order service
+export interface PaymentRequestEvent {
+  type: PaymentEventType.PAYMENT_REQUEST;
   data: {
     orderId: string;
     items: OrderItem[];
-  };
-}
-
-export interface InventoryFailedEvent {
-  type: InventoryEventType.INVENTORY_FAILED;
-  data: {
-    orderId: string;
-    reason: string;
   };
 }
 

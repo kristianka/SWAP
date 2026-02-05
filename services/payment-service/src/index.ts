@@ -5,8 +5,8 @@ import { startPaymentConsumer } from "./consumers/paymentConsumer";
 
 const app = Fastify();
 
-// Payment service listens to inventory events and processes payments.
-// When inventory is reserved, it processes the payment and publishes payment events.
+// Payment service listens to payment requests and processes payments.
+// When a payment request is received, it processes the payment and publishes payment events.
 
 async function start() {
   try {
@@ -15,7 +15,7 @@ async function start() {
     // Connect to RabbitMQ
     const channel = await connectToRabbitMQ();
 
-    // Start consuming inventory events
+    // Start consuming payment requests
     await startPaymentConsumer(channel);
 
     // Register routes

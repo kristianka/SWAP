@@ -18,6 +18,7 @@ export enum InventoryEventType {
 }
 
 export enum PaymentEventType {
+  PAYMENT_REQUEST = "PAYMENT_REQUEST",
   PAYMENT_SUCCESS = "PAYMENT_SUCCESS",
   PAYMENT_FAILED = "PAYMENT_FAILED",
 }

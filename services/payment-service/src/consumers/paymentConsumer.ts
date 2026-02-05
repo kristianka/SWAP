@@ -1,23 +1,21 @@
 import type { Channel, ConsumeMessage } from "amqplib";
-import type { InventoryReservedEvent, InventoryFailedEvent } from "../types";
-import { handleInventoryEvent } from "../handlers/paymentEventHandler";
-import { INVENTORY_EVENTS } from "../constants";
+import type { PaymentRequestEvent } from "../types";
+import { handlePaymentRequest } from "../handlers/paymentEventHandler";
+import { PAYMENT_QUEUE } from "../constants";
 
 export const startPaymentConsumer = async (channel: Channel) => {
-  await channel.assertQueue(INVENTORY_EVENTS);
+  await channel.assertQueue(PAYMENT_QUEUE);
 
-  // Consume messages from INVENTORY_EVENTS queue
-  channel.consume(INVENTORY_EVENTS, async (msg: ConsumeMessage | null) => {
+  // Consume messages from PAYMENT_QUEUE
+  channel.consume(PAYMENT_QUEUE, async (msg: ConsumeMessage | null) => {
     if (msg) {
       try {
-        const event: InventoryReservedEvent | InventoryFailedEvent = JSON.parse(
-          msg.content.toString(),
-        );
+        const event: PaymentRequestEvent = JSON.parse(msg.content.toString());
 
-        await handleInventoryEvent(event);
+        await handlePaymentRequest(event);
         channel.ack(msg);
       } catch (error) {
-        console.error("Error processing inventory event:", error);
+        console.error("Error processing payment request:", error);
 
         // nack the message and requeue it for retry, unless it has been redelivered
         if (msg.fields.redelivered) {
@@ -31,5 +29,5 @@ export const startPaymentConsumer = async (channel: Channel) => {
     }
   });
 
-  console.log("� Payment Service listening for inventory events...");
+  console.log("Payment Service listening for payment requests...");
 };
