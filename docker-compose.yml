@@ -55,7 +55,7 @@ services:
       DATABASE_URL: postgres://postgres:dev@order-db:5432/orders
       RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672
     ports:
-      - "3001:3000"
+      - "3001:3001"
 
   inventory-service:
     build:
@@ -70,7 +70,7 @@ services:
       DATABASE_URL: postgres://postgres:dev@inventory-db:5432/inventory
       RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672
     ports:
-      - "3002:3000"
+      - "3002:3002"
 
   payment-service:
     build:
@@ -85,7 +85,7 @@ services:
       DATABASE_URL: postgres://postgres:dev@payment-db:5432/payments
       RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672
     ports:
-      - "3003:3000"
+      - "3003:3003"
 
 volumes:
   rabbitmq-data:
