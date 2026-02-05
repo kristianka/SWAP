@@ -9,9 +9,92 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: admin
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
       test: rabbitmq-diagnostics check_port_connectivity
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
+
+  order-db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: orders
+      POSTGRES_PASSWORD: dev
+    volumes:
+      - order-db-data:/var/lib/postgresql
+    ports:
+      - "5433:5432"
+
+  inventory-db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: inventory
+      POSTGRES_PASSWORD: dev
+    volumes:
+      - inventory-db-data:/var/lib/postgresql
+    ports:
+      - "5434:5432"
+
+  payment-db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: payments
+      POSTGRES_PASSWORD: dev
+    volumes:
+      - payment-db-data:/var/lib/postgresql
+    ports:
+      - "5435:5432"
+
+  order-service:
+    build:
+      context: .
+      dockerfile: ./services/order-service/Dockerfile
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      order-db:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgres://postgres:dev@order-db:5432/orders
+      RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672
+    ports:
+      - "3001:3001"
+
+  inventory-service:
+    build:
+      context: .
+      dockerfile: ./services/inventory-service/Dockerfile
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      inventory-db:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgres://postgres:dev@inventory-db:5432/inventory
+      RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672
+    ports:
+      - "3002:3002"
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: ./services/payment-service/Dockerfile
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      payment-db:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgres://postgres:dev@payment-db:5432/payments
+      RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672
+    ports:
+      - "3003:3003"
+
+volumes:
+  rabbitmq-data:
+  order-db-data:
+  inventory-db-data:
+  payment-db-data:

@@ -1,26 +1,69 @@
 import type { Order } from "@swap/shared";
 import type { OrderStatus } from "@swap/shared";
+import { pool } from "../db";
 
-// In-memory storage, later in postgres
-export const orders: Order[] = [];
-
-export const addOrder = (order: Order): void => {
-  orders.push(order);
+export const addOrder = async (order: Order): Promise<void> => {
+  await pool.query(
+    `
+    INSERT INTO orders
+      (id, items, status, created_at)
+    VALUES ($1, $2, $3, $4)
+    `,
+    [order.id, JSON.stringify(order.items), order.status, order.createdAt],
+  );
 };
 
-export const getOrders = (): Order[] => {
-  return orders;
+export const getOrders = async (): Promise<Order[]> => {
+  const result = await pool.query(`
+    SELECT
+      *
+    FROM
+      orders
+    ORDER BY
+      created_at DESC
+  `);
+  return result.rows.map((row) => ({
+    id: row.id,
+    items: row.items,
+    status: row.status,
+    createdAt: row.created_at,
+  }));
 };
 
-export const getOrderById = (id: string): Order | undefined => {
-  return orders.find((order) => order.id === id);
+export const getOrderById = async (id: string): Promise<Order | undefined> => {
+  const result = await pool.query(
+    `
+    SELECT
+      *
+    FROM
+      orders
+    WHERE
+      id = $1
+    `,
+    [id],
+  );
+  if (result.rows.length === 0) return undefined;
+
+  const row = result.rows[0];
+  return {
+    id: row.id,
+    items: row.items,
+    status: row.status,
+    createdAt: row.created_at,
+  };
 };
 
-export const updateOrderStatus = (orderId: string, status: OrderStatus): boolean => {
-  const order = orders.find((o) => o.id === orderId);
-  if (order) {
-    order.status = status;
-    return true;
-  }
-  return false;
+export const updateOrderStatus = async (orderId: string, status: OrderStatus): Promise<boolean> => {
+  const result = await pool.query(
+    `
+    UPDATE
+      orders
+    SET
+      status = $1
+    WHERE
+      id = $2
+    `,
+    [status, orderId],
+  );
+  return result.rowCount !== null && result.rowCount > 0;
 };

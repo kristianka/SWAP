@@ -5,13 +5,13 @@ import { createOrderHandler } from "../handlers/orderHandler";
 export const registerOrderRoutes = (app: FastifyInstance) => {
   // Get all orders
   app.get("/orders", async () => {
-    return getOrders();
+    return await getOrders();
   });
 
   // Get order by ID
   app.get("/orders/:id", async (req, reply) => {
     const { id } = req.params as { id: string };
-    const order = getOrderById(id);
+    const order = await getOrderById(id);
 
     // this wouldn't fly in real service since you can
     // get anyones order lol but for demo purposes it's fine

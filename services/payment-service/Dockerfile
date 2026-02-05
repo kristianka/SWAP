@@ -1,0 +1,44 @@
+FROM oven/bun:1.2.2-alpine AS base
+WORKDIR /app
+
+# Install dependencies for all workspace packages
+FROM base AS deps
+# Copy workspace configuration
+COPY package.json ./
+COPY bun.lockb* ./
+
+# Copy shared package
+COPY shared/package.json shared/
+COPY shared/tsconfig.json shared/
+COPY shared/src shared/src/
+
+# Copy payment-service package.json
+COPY services/payment-service/package.json services/payment-service/
+
+# Install dependencies (this will resolve workspace:* dependencies)
+RUN bun install --frozen-lockfile
+
+# Build stage - copy source code
+FROM base AS build
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/shared ./shared
+COPY package.json ./
+
+# Copy payment-service source
+COPY services/payment-service services/payment-service/
+
+# Production stage
+FROM base AS production
+ENV NODE_ENV=production
+
+# Copy dependencies and source
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/shared ./shared
+COPY --from=build /app/services/payment-service ./services/payment-service
+COPY package.json ./
+
+WORKDIR /app/services/payment-service
+
+EXPOSE 3000
+
+CMD ["bun", "run", "start"]

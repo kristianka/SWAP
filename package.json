@@ -11,11 +11,12 @@
     "typecheck:order": "cd services/order-service && bun run typecheck",
     "typecheck:inventory": "cd services/inventory-service && bun run typecheck",
     "typecheck:payment": "cd services/payment-service && bun run typecheck",
-    "start-all": "bun run start:order & bun run start:inventory & bun run start:payment",
+    "start:all": "bun run start:order & bun run start:inventory & bun run start:payment",
     "test": "bun test services/order-service/tests",
     "start:order": "cd services/order-service && bun run start",
     "start:inventory": "cd services/inventory-service && bun run start",
     "start:payment": "cd services/payment-service && bun run start",
+    "dev:all": "bun run dev:order & bun run dev:inventory & bun run dev:payment",
     "dev:order": "cd services/order-service && bun run dev",
     "dev:inventory": "cd services/inventory-service && bun run dev",
     "dev:payment": "cd services/payment-service && bun run dev"

@@ -2,12 +2,16 @@ import Fastify from "fastify";
 import { connectToRabbitMQ } from "./rabbitmq";
 import { registerHealthRoutes } from "./routes/health";
 import { startOrderConsumer } from "./consumers/orderConsumer";
+import { initDatabase } from "./db";
 
 const app = Fastify();
 
 async function start() {
   try {
     const port = process.env.PORT || 3002;
+
+    // Initialize database
+    await initDatabase();
 
     // Connect to RabbitMQ
     const channel = await connectToRabbitMQ();

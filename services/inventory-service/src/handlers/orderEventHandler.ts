@@ -22,9 +22,10 @@ export const handleOrderEvent = async (event: OrderCreatedEvent | PaymentFailedE
 const handleOrderCreated = async (event: OrderCreatedEvent) => {
   const orderId = event.data.id;
   const idempotencyKey = `inventory:reserve:${orderId}`;
+  const processed = await hasProcessed(idempotencyKey);
 
   // Idempotency check, skip if already processed
-  if (hasProcessed(idempotencyKey)) {
+  if (processed) {
     console.log(`⏭️ Skipping duplicate ORDER_CREATED for order ${orderId}`);
     return true;
   }
@@ -54,7 +55,7 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
   console.log(`Published ${InventoryEventType.INVENTORY_RESERVED} for order ${orderId}`);
 
   // Mark as processed after successful handling
-  markProcessed(idempotencyKey);
+  await markProcessed(idempotencyKey);
 
   return true;
 };
@@ -62,9 +63,10 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
 const handlePaymentFailed = async (event: PaymentFailedEvent) => {
   const orderId = event.data.orderId;
   const idempotencyKey = `inventory:release:${orderId}`;
+  const processed = await hasProcessed(idempotencyKey);
 
   // Idempotency check - skip if already processed
-  if (hasProcessed(idempotencyKey)) {
+  if (processed) {
     console.log(`⏭️ Skipping duplicate PAYMENT_FAILED for order ${orderId}`);
     return true;
   }
@@ -74,7 +76,7 @@ const handlePaymentFailed = async (event: PaymentFailedEvent) => {
   // Business logic here
 
   // Mark as processed
-  markProcessed(idempotencyKey);
+  await markProcessed(idempotencyKey);
 
   return true;
 };
