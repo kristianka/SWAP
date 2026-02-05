@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import { connectToRabbitMQ } from "./rabbitmq";
 import { registerHealthRoutes } from "./routes/health";
+import { registerPaymentRoutes } from "./routes/payments";
 import { startPaymentConsumer } from "./consumers/paymentConsumer";
 import { initDatabase } from "./db";
 
@@ -24,6 +25,7 @@ async function start() {
 
     // Register routes
     await registerHealthRoutes(app);
+    await registerPaymentRoutes(app);
 
     // Start HTTP server
     await app.listen({ port: Number(port), host: "0.0.0.0" });
