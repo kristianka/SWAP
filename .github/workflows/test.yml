@@ -43,18 +43,18 @@ jobs:
         env:
           RABBITMQ_URL: amqp://admin:admin@localhost:5672
 
-      - name: Wait for services to be ready
-        run: |
-          timeout 60 bash -c '
-            echo "Waiting for services to be ready..."
-            until \
-              curl -sSf http://localhost:3001/ >/dev/null 2>&1 && \
-              curl -sSf http://localhost:3002/ >/dev/null 2>&1 && \
-              curl -sSf http://localhost:3003/ >/dev/null 2>&1; do
-              echo "Services not ready yet, retrying in 2 seconds..."
-              sleep 2
-            done
-          '
+      # - name: Wait for services to be ready
+      #   run: |
+      #     timeout 60 bash -c '
+      #       echo "Waiting for services to be ready..."
+      #       until \
+      #         curl -sSf http://localhost:3001/ >/dev/null 2>&1 && \
+      #         curl -sSf http://localhost:3002/ >/dev/null 2>&1 && \
+      #         curl -sSf http://localhost:3003/ >/dev/null 2>&1; do
+      #         echo "Services not ready yet, retrying in 2 seconds..."
+      #         sleep 2
+      #       done
+      #     '
 
       - name: Run tests
         run: bun run test
