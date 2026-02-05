@@ -6,9 +6,10 @@ import { hasProcessed, markProcessed } from "../storage/idempotencyStorage";
 export const handlePaymentEvent = async (event: PaymentSuccessEvent | PaymentFailedEvent) => {
   const orderId = event.data.orderId;
   const idempotencyKey = `payment:${orderId}:${event.type}`;
+  const processed = await hasProcessed(idempotencyKey);
 
   // Idempotency check - skip if already processed
-  if (hasProcessed(idempotencyKey)) {
+  if (processed) {
     console.log(`⏭️ Skipping duplicate payment event for order ${orderId}`);
     return;
   }
@@ -28,7 +29,7 @@ export const handlePaymentEvent = async (event: PaymentSuccessEvent | PaymentFai
   }
 
   // Mark as processed after successful handling
-  markProcessed(idempotencyKey);
+  await markProcessed(idempotencyKey);
 };
 
 const handlePaymentSuccess = async (event: PaymentSuccessEvent) => {
@@ -36,7 +37,7 @@ const handlePaymentSuccess = async (event: PaymentSuccessEvent) => {
   console.log(`Payment successful for order ${orderId}: $${amount} (${transactionId})`);
 
   // Update order status to COMPLETED
-  const updated = updateOrderStatus(orderId, OrderStatus.COMPLETED);
+  const updated = await updateOrderStatus(orderId, OrderStatus.COMPLETED);
 
   if (updated) {
     console.log(`Order ${orderId} completed successfully!`);
@@ -50,7 +51,7 @@ const handlePaymentFailed = async (event: PaymentFailedEvent) => {
   console.log(`Payment failed for order ${orderId}: ${reason}`);
 
   // Update order status to CANCELLED
-  const updated = updateOrderStatus(orderId, OrderStatus.CANCELLED);
+  const updated = await updateOrderStatus(orderId, OrderStatus.CANCELLED);
 
   if (updated) {
     console.log(`Order ${orderId} cancelled due to payment failure`);

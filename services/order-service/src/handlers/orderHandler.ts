@@ -27,7 +27,7 @@ export const createOrderHandler = async (
     createdAt: new Date().toISOString(),
   };
 
-  addOrder(order);
+  await addOrder(order);
 
   // Publish event to RabbitMQ
   const event: OrderEvent = {
