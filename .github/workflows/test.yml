@@ -19,6 +19,9 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Type check
+        run: bun run typecheck
+
       - name: Start services with Docker Compose
         run: docker compose up -d
 

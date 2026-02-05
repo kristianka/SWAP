@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "start": "bun src/index.ts",
-    "dev": "bun --watch --no-clear-screen --verbose src/index.ts"
+    "dev": "bun --watch --no-clear-screen --verbose src/index.ts",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/amqplib": "^0.10.8",
