@@ -1,10 +1,10 @@
 import type { Channel, ConsumeMessage } from "amqplib";
-import type { OrderCreatedEvent, PaymentFailedEvent } from "../types";
-import { ORDER_EVENTS } from "../constants";
+import type { OrderCreatedEvent, PaymentFailedEvent } from "@swap/shared";
+import { QUEUES } from "@swap/shared";
 import { handleOrderEvent } from "../handlers/orderEventHandler";
 
 export const startOrderConsumer = (channel: Channel) => {
-  channel.consume(ORDER_EVENTS, async (msg: ConsumeMessage | null) => {
+  channel.consume(QUEUES.ORDER_EVENTS, async (msg: ConsumeMessage | null) => {
     if (!msg) {
       return;
     }
@@ -29,5 +29,5 @@ export const startOrderConsumer = (channel: Channel) => {
     }
   });
 
-  console.log(`Listening for messages on ${ORDER_EVENTS} queue`);
+  console.log(`Listening for messages on ${QUEUES.ORDER_EVENTS} queue`);
 };

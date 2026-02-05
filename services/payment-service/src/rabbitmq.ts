@@ -1,5 +1,5 @@
 import amqplib from "amqplib";
-import { INVENTORY_EVENTS, PAYMENT_EVENTS } from "./constants";
+import { QUEUES } from "@swap/shared";
 
 let channel: amqplib.Channel | null = null;
 
@@ -9,10 +9,14 @@ export const connectToRabbitMQ = async (): Promise<amqplib.Channel> => {
   const connection = await amqplib.connect(rabbitMqURL);
   channel = await connection.createChannel();
 
-  await channel.assertQueue(INVENTORY_EVENTS);
-  await channel.assertQueue(PAYMENT_EVENTS);
+  await channel.assertQueue(QUEUES.INVENTORY_EVENTS);
+  await channel.assertQueue(QUEUES.PAYMENT_EVENTS);
 
-  console.log("✅ Connected to RabbitMQ with queues:", INVENTORY_EVENTS, PAYMENT_EVENTS);
+  console.log(
+    "✅ Connected to RabbitMQ with queues:",
+    QUEUES.INVENTORY_EVENTS,
+    QUEUES.PAYMENT_EVENTS,
+  );
 
   return channel;
 };

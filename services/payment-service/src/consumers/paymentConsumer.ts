@@ -1,13 +1,13 @@
 import type { Channel, ConsumeMessage } from "amqplib";
-import type { InventoryReservedEvent } from "../types";
+import type { InventoryReservedEvent } from "@swap/shared";
+import { QUEUES } from "@swap/shared";
 import { handleInventoryReserved } from "../handlers/paymentEventHandler";
-import { INVENTORY_EVENTS } from "../constants";
 
 export const startPaymentConsumer = async (channel: Channel) => {
-  await channel.assertQueue(INVENTORY_EVENTS);
+  await channel.assertQueue(QUEUES.INVENTORY_EVENTS);
 
   // Consume messages from INVENTORY_EVENTS - react to inventory reservations
-  channel.consume(INVENTORY_EVENTS, async (msg: ConsumeMessage | null) => {
+  channel.consume(QUEUES.INVENTORY_EVENTS, async (msg: ConsumeMessage | null) => {
     if (msg) {
       try {
         const event: InventoryReservedEvent = JSON.parse(msg.content.toString());

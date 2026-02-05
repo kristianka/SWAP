@@ -1,9 +1,18 @@
-import type { InventoryReservedEvent, PaymentSuccessEvent, PaymentFailedEvent } from "../types";
-import { PaymentEventType, PAYMENT_EVENTS } from "../constants";
+import type { InventoryReservedEvent, PaymentSuccessEvent, PaymentFailedEvent } from "@swap/shared";
+import { PaymentEventType, QUEUES } from "@swap/shared";
 import { getChannel } from "../rabbitmq";
+import { hasProcessed, markProcessed } from "../storage/idempotencyStorage";
 
 export const handleInventoryReserved = async (event: InventoryReservedEvent) => {
   const { orderId, items } = event.data;
+  const idempotencyKey = `payment:${orderId}`;
+
+  // Idempotency check, prevent duplicate payment processing
+  if (hasProcessed(idempotencyKey)) {
+    console.log(`⏭️ Skipping duplicate payment request for order ${orderId}`);
+    return;
+  }
+
   console.log(`✅ Processing payment for order ${orderId}...`);
 
   // Simulate payment processing
@@ -27,9 +36,12 @@ export const handleInventoryReserved = async (event: InventoryReservedEvent) => 
     };
 
     const channel = getChannel();
-    channel.sendToQueue(PAYMENT_EVENTS, Buffer.from(JSON.stringify(paymentEvent)));
+    channel.sendToQueue(QUEUES.PAYMENT_EVENTS, Buffer.from(JSON.stringify(paymentEvent)));
 
     console.log(`Published ${PaymentEventType.PAYMENT_SUCCESS} for order ${orderId}`);
+
+    // Mark as processed after successful handling
+    markProcessed(idempotencyKey);
   } catch (error) {
     console.error(`❌ Payment failed for order ${orderId}:`, error);
 
@@ -43,8 +55,11 @@ export const handleInventoryReserved = async (event: InventoryReservedEvent) => 
     };
 
     const channel = getChannel();
-    channel.sendToQueue(PAYMENT_EVENTS, Buffer.from(JSON.stringify(paymentFailedEvent)));
+    channel.sendToQueue(QUEUES.PAYMENT_EVENTS, Buffer.from(JSON.stringify(paymentFailedEvent)));
 
     console.log(`Published ${PaymentEventType.PAYMENT_FAILED} for order ${orderId}`);
+
+    // Mark as processed even on failure to prevent retry loops
+    markProcessed(idempotencyKey);
   }
 };

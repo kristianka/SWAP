@@ -1,8 +1,18 @@
-import type { PaymentSuccessEvent, PaymentFailedEvent } from "../types";
-import { PaymentEventType, OrderStatus } from "../constants";
+import type { PaymentSuccessEvent, PaymentFailedEvent } from "@swap/shared";
+import { PaymentEventType, OrderStatus } from "@swap/shared";
 import { updateOrderStatus } from "../storage/orderStorage";
+import { hasProcessed, markProcessed } from "../storage/idempotencyStorage";
 
 export const handlePaymentEvent = async (event: PaymentSuccessEvent | PaymentFailedEvent) => {
+  const orderId = event.data.orderId;
+  const idempotencyKey = `payment:${orderId}:${event.type}`;
+
+  // Idempotency check - skip if already processed
+  if (hasProcessed(idempotencyKey)) {
+    console.log(`⏭️ Skipping duplicate payment event for order ${orderId}`);
+    return;
+  }
+
   console.log(`Received payment event: ${event.type}`, event.data);
 
   switch (event.type) {
@@ -14,7 +24,11 @@ export const handlePaymentEvent = async (event: PaymentSuccessEvent | PaymentFai
       break;
     default:
       console.warn(`Unknown payment event type: ${event}`);
+      return; // Don't mark as processed for unknown events
   }
+
+  // Mark as processed after successful handling
+  markProcessed(idempotencyKey);
 };
 
 const handlePaymentSuccess = async (event: PaymentSuccessEvent) => {

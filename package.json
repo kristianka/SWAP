@@ -1,0 +1,14 @@
+{
+  "name": "swap-microservices",
+  "private": true,
+  "workspaces": [
+    "shared",
+    "services/*"
+  ],
+  "scripts": {
+    "test": "bun test services/order-service/tests",
+    "dev:order": "cd services/order-service && bun run dev",
+    "dev:inventory": "cd services/inventory-service && bun run dev",
+    "dev:payment": "cd services/payment-service && bun run dev"
+  }
+}

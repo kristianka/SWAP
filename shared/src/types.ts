@@ -1,10 +1,13 @@
 import type {
-  OrderEventType,
   OrderStatus,
+  OrderEventType,
   InventoryEventType,
   PaymentEventType,
 } from "./constants";
 
+// ===========================================
+// Domain Models
+// ===========================================
 export interface OrderItem {
   product: string;
   quantity: number;
@@ -17,11 +20,19 @@ export interface Order {
   createdAt: string;
 }
 
+// ===========================================
+// Event Payloads (what services exchange)
+// ===========================================
+
+// Order Service events
 export interface OrderEvent {
   type: OrderEventType;
   data: Order;
 }
 
+export type OrderCreatedEvent = OrderEvent;
+
+// Inventory Service events
 export interface InventoryReservedEvent {
   type: InventoryEventType.INVENTORY_RESERVED;
   data: {
@@ -38,6 +49,17 @@ export interface InventoryFailedEvent {
   };
 }
 
+export interface InventoryReleasedEvent {
+  type: InventoryEventType.INVENTORY_RELEASED;
+  data: {
+    orderId: string;
+    items: OrderItem[];
+  };
+}
+
+export type InventoryEvent = InventoryReservedEvent | InventoryFailedEvent | InventoryReleasedEvent;
+
+// Payment Service events
 export interface PaymentSuccessEvent {
   type: PaymentEventType.PAYMENT_SUCCESS;
   data: {
@@ -55,4 +77,4 @@ export interface PaymentFailedEvent {
   };
 }
 
-export type OrderCreatedEvent = OrderEvent;
+export type PaymentEvent = PaymentSuccessEvent | PaymentFailedEvent;

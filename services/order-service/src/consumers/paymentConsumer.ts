@@ -1,13 +1,13 @@
 import type { Channel, ConsumeMessage } from "amqplib";
-import type { PaymentSuccessEvent, PaymentFailedEvent } from "../types";
+import type { PaymentSuccessEvent, PaymentFailedEvent } from "@swap/shared";
+import { QUEUES } from "@swap/shared";
 import { handlePaymentEvent } from "../handlers/paymentEventHandler";
-import { PAYMENT_EVENTS } from "../constants";
 
 export const startPaymentConsumer = async (channel: Channel) => {
-  await channel.assertQueue(PAYMENT_EVENTS);
+  await channel.assertQueue(QUEUES.PAYMENT_EVENTS);
 
   // Consume messages from PAYMENT_EVENTS queue
-  channel.consume(PAYMENT_EVENTS, async (msg: ConsumeMessage | null) => {
+  channel.consume(QUEUES.PAYMENT_EVENTS, async (msg: ConsumeMessage | null) => {
     if (msg) {
       try {
         const event: PaymentSuccessEvent | PaymentFailedEvent = JSON.parse(msg.content.toString());

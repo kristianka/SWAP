@@ -1,5 +1,5 @@
-import type { Order } from "../types";
-import type { OrderStatus } from "../constants";
+import type { Order } from "@swap/shared";
+import type { OrderStatus } from "@swap/shared";
 
 // In-memory storage, later in postgres
 export const orders: Order[] = [];
