@@ -27,18 +27,12 @@ jobs:
 
       - name: Wait for RabbitMQ to be ready
         run: |
-          echo "Waiting for RabbitMQ container to start..."
-          timeout 30 bash -c 'until docker ps | grep -q rabbitmq; do 
-            echo "Container not running yet..."
-            sleep 2
+          echo "Waiting for RabbitMQ to become healthy..."
+          timeout 90 bash -c 'until [ "$(docker inspect -f {{.State.Health.Status}} rabbitmq 2>/dev/null)" = "healthy" ]; do 
+            echo "RabbitMQ health status: $(docker inspect -f {{.State.Health.Status}} rabbitmq 2>/dev/null || echo pending)"
+            sleep 3
           done'
-
-          echo "Waiting for RabbitMQ to be ready..."
-          timeout 60 bash -c 'until docker exec rabbitmq rabbitmq-diagnostics ping 2>/dev/null; do 
-            echo "RabbitMQ not ready yet..."
-            sleep 2
-          done'
-          echo "✓ RabbitMQ is ready"
+          echo "✓ RabbitMQ is healthy and ready"
 
       - name: Start all services
         run: bun run start-all > /tmp/services.log 2>&1 &
