@@ -9,10 +9,14 @@ export const connectToRabbitMQ = async (): Promise<amqplib.Channel> => {
   const connection = await amqplib.connect(rabbitMqURL);
   channel = await connection.createChannel();
 
-  await channel.assertQueue(QUEUES.ORDER_EVENTS);
   await channel.assertQueue(QUEUES.INVENTORY_EVENTS);
+  await channel.assertQueue(QUEUES.PAYMENT_EVENTS);
 
-  console.log("✅ Connected to RabbitMQ");
+  console.log(
+    "✅ Connected to RabbitMQ with queues:",
+    QUEUES.INVENTORY_EVENTS,
+    QUEUES.PAYMENT_EVENTS,
+  );
 
   return channel;
 };

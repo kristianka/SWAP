@@ -1,16 +1,17 @@
-
 services:
   rabbitmq:
     image: rabbitmq:4.2.3-management
     container_name: rabbitmq
+    user: "rabbitmq"
     ports:
       - "5672:5672"
       - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: admin
-    volumes:
-      - rabbitmq-data:/var/lib/rabbitmq
-
-volumes:
-  rabbitmq-data:
+    healthcheck:
+      test: rabbitmq-diagnostics check_port_connectivity
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s

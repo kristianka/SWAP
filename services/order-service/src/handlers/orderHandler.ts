@@ -1,6 +1,6 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
-import type { OrderItem, Order, OrderEvent } from "../types";
-import { OrderStatus, OrderEventType, ORDER_EVENTS } from "../constants";
+import type { OrderItem, Order, OrderEvent } from "@swap/shared";
+import { OrderStatus, OrderEventType, QUEUES } from "@swap/shared";
 import { addOrder } from "../storage/orderStorage";
 import { getChannel } from "../rabbitmq";
 
@@ -36,7 +36,7 @@ export const createOrderHandler = async (
   };
 
   const channel = getChannel();
-  channel.sendToQueue(ORDER_EVENTS, Buffer.from(JSON.stringify(event)));
+  channel.sendToQueue(QUEUES.ORDER_EVENTS, Buffer.from(JSON.stringify(event)));
 
   console.log(`Published ${OrderEventType.ORDER_CREATED} for order ${order.id}`);
 

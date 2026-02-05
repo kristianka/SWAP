@@ -1,0 +1,23 @@
+{
+  "name": "swap-microservices",
+  "private": true,
+  "workspaces": [
+    "shared",
+    "services/*"
+  ],
+  "scripts": {
+    "typecheck": "bun run typecheck:shared && bun run typecheck:order && bun run typecheck:inventory && bun run typecheck:payment",
+    "typecheck:shared": "cd shared && bun run typecheck",
+    "typecheck:order": "cd services/order-service && bun run typecheck",
+    "typecheck:inventory": "cd services/inventory-service && bun run typecheck",
+    "typecheck:payment": "cd services/payment-service && bun run typecheck",
+    "start-all": "bun run start:order & bun run start:inventory & bun run start:payment",
+    "test": "bun test services/order-service/tests",
+    "start:order": "cd services/order-service && bun run start",
+    "start:inventory": "cd services/inventory-service && bun run start",
+    "start:payment": "cd services/payment-service && bun run start",
+    "dev:order": "cd services/order-service && bun run dev",
+    "dev:inventory": "cd services/inventory-service && bun run dev",
+    "dev:payment": "cd services/payment-service && bun run dev"
+  }
+}

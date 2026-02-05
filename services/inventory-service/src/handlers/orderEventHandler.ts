@@ -1,11 +1,7 @@
-import type { OrderCreatedEvent, PaymentFailedEvent, InventoryReservedEvent } from "../types";
-import {
-  OrderEventType,
-  PaymentEventType,
-  InventoryEventType,
-  INVENTORY_EVENTS,
-} from "../constants";
+import type { OrderCreatedEvent, PaymentFailedEvent, InventoryReservedEvent } from "@swap/shared";
+import { OrderEventType, PaymentEventType, InventoryEventType, QUEUES } from "@swap/shared";
 import { getChannel } from "../rabbitmq";
+import { hasProcessed, markProcessed } from "../storage/idempotencyStorage";
 
 export const handleOrderEvent = async (event: OrderCreatedEvent | PaymentFailedEvent) => {
   console.log(`📦 Received event: ${event.type}`, event.data);
@@ -24,12 +20,21 @@ export const handleOrderEvent = async (event: OrderCreatedEvent | PaymentFailedE
 };
 
 const handleOrderCreated = async (event: OrderCreatedEvent) => {
-  console.log(`Checking inventory for order ${event.data.id}`);
+  const orderId = event.data.id;
+  const idempotencyKey = `inventory:reserve:${orderId}`;
+
+  // Idempotency check, skip if already processed
+  if (hasProcessed(idempotencyKey)) {
+    console.log(`⏭️ Skipping duplicate ORDER_CREATED for order ${orderId}`);
+    return true;
+  }
+
+  console.log(`Checking inventory for order ${orderId}`);
   // TODO: Check inventory, reserve items, etc.
   // Business logic here
 
   // For now, assume all items are available
-  console.log(`✅ Inventory available, reserving items for order ${event.data.id}`);
+  console.log(`✅ Inventory available, reserving items for order ${orderId}`);
 
   // artificial delay to simulate processing
   await new Promise((resolve) => setTimeout(resolve, 2500));
@@ -38,22 +43,38 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
   const inventoryEvent: InventoryReservedEvent = {
     type: InventoryEventType.INVENTORY_RESERVED,
     data: {
-      orderId: event.data.id,
+      orderId,
       items: event.data.items,
     },
   };
 
   const channel = getChannel();
-  channel.sendToQueue(INVENTORY_EVENTS, Buffer.from(JSON.stringify(inventoryEvent)));
+  channel.sendToQueue(QUEUES.INVENTORY_EVENTS, Buffer.from(JSON.stringify(inventoryEvent)));
 
-  console.log(`Published ${InventoryEventType.INVENTORY_RESERVED} for order ${event.data.id}`);
+  console.log(`Published ${InventoryEventType.INVENTORY_RESERVED} for order ${orderId}`);
+
+  // Mark as processed after successful handling
+  markProcessed(idempotencyKey);
 
   return true;
 };
 
 const handlePaymentFailed = async (event: PaymentFailedEvent) => {
-  console.log(`Releasing inventory for order ${event.data.orderId}`);
+  const orderId = event.data.orderId;
+  const idempotencyKey = `inventory:release:${orderId}`;
+
+  // Idempotency check - skip if already processed
+  if (hasProcessed(idempotencyKey)) {
+    console.log(`⏭️ Skipping duplicate PAYMENT_FAILED for order ${orderId}`);
+    return true;
+  }
+
+  console.log(`Releasing inventory for order ${orderId}`);
   // TODO: Release reserved inventory items
   // Business logic here
+
+  // Mark as processed
+  markProcessed(idempotencyKey);
+
   return true;
 };
