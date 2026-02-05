@@ -43,7 +43,7 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
   const inventoryEvent: InventoryReservedEvent = {
     type: InventoryEventType.INVENTORY_RESERVED,
     data: {
-      orderId: orderId,
+      orderId,
       items: event.data.items,
     },
   };
