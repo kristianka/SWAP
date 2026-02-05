@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import { connectToRabbitMQ } from "./rabbitmq";
 import { registerHealthRoutes } from "./routes/health";
+import { registerInventoryRoutes } from "./routes/inventory";
 import { startOrderConsumer } from "./consumers/orderConsumer";
 import { initDatabase } from "./db";
 
@@ -18,6 +19,7 @@ async function start() {
 
     // Register routes
     await registerHealthRoutes(app);
+    await registerInventoryRoutes(app);
 
     // Start consumers
     startOrderConsumer(channel);
