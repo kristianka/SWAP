@@ -35,7 +35,7 @@ jobs:
           echo "✓ RabbitMQ is healthy and ready"
 
       - name: Start all services
-        run: bun run start-all > /tmp/services.log 2>&1 &
+        run: bun run start:all > /tmp/services.log 2>&1 &
         env:
           RABBITMQ_URL: amqp://admin:admin@localhost:5672
 
