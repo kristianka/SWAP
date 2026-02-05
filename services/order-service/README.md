@@ -17,5 +17,5 @@ bun run dev
 ```bash
 curl -X POST http://localhost:3001/orders \
   -H "Content-Type: application/json" \
-  -d @services/order-service/dummy-order.json
+  -d @dummy-order.json
 ```
