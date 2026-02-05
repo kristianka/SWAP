@@ -22,9 +22,9 @@ export interface OrderEvent {
   data: Order;
 }
 
-// Incoming payment request from order service
-export interface PaymentRequestEvent {
-  type: PaymentEventType.PAYMENT_REQUEST;
+// Incoming event from inventory service
+export interface InventoryReservedEvent {
+  type: InventoryEventType.INVENTORY_RESERVED;
   data: {
     orderId: string;
     items: OrderItem[];

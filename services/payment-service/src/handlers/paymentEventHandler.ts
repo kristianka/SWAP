@@ -1,8 +1,8 @@
-import type { PaymentRequestEvent, PaymentSuccessEvent, PaymentFailedEvent } from "../types";
+import type { InventoryReservedEvent, PaymentSuccessEvent, PaymentFailedEvent } from "../types";
 import { PaymentEventType, PAYMENT_EVENTS } from "../constants";
 import { getChannel } from "../rabbitmq";
 
-export const handlePaymentRequest = async (event: PaymentRequestEvent) => {
+export const handleInventoryReserved = async (event: InventoryReservedEvent) => {
   const { orderId, items } = event.data;
   console.log(`✅ Processing payment for order ${orderId}...`);
 

@@ -18,7 +18,6 @@ export enum InventoryEventType {
 }
 
 export enum PaymentEventType {
-  PAYMENT_REQUEST = "PAYMENT_REQUEST",
   PAYMENT_SUCCESS = "PAYMENT_SUCCESS",
   PAYMENT_FAILED = "PAYMENT_FAILED",
 }
@@ -31,4 +30,3 @@ export const INVENTORY_SERVICE = "inventory-service";
 
 export const PAYMENT_EVENTS = "payment-events";
 export const PAYMENT_SERVICE = "payment-service";
-export const PAYMENT_QUEUE = "payment-queue";
