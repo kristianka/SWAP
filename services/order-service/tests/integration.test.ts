@@ -1,16 +1,6 @@
+import { OrderStatus } from "@swap/shared";
+import type { Order } from "@swap/shared/types";
 import { describe, test, expect, beforeAll } from "bun:test";
-
-interface OrderItem {
-  product: string;
-  quantity: number;
-}
-
-interface Order {
-  id: string;
-  items: OrderItem[];
-  status: "PENDING" | "PROCESSING" | "COMPLETED" | "CANCELLED";
-  createdAt: string;
-}
 
 const ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL || "http://localhost:3001";
 const INVENTORY_SERVICE_URL = process.env.INVENTORY_SERVICE_URL || "http://localhost:3002";
@@ -77,19 +67,19 @@ describe("Microservices Integration Tests", () => {
       const order = (await createResponse.json()) as Order;
 
       expect(order).toHaveProperty("id");
-      expect(order.status).toBe("PENDING");
+      expect(order.status).toBe(OrderStatus.PENDING);
       expect(order.items).toHaveLength(2);
 
       // Wait for order to complete
       const finalStatus = await waitForOrderStatus(order.id);
 
-      expect(finalStatus).toBe("COMPLETED");
+      expect(finalStatus).toBe(OrderStatus.COMPLETED);
 
       // Verify final order state
       const finalResponse = await fetch(`${ORDER_SERVICE_URL}/orders/${order.id}`);
       const finalOrder = (await finalResponse.json()) as Order;
 
-      expect(finalOrder.status).toBe("COMPLETED");
+      expect(finalOrder.status).toBe(OrderStatus.COMPLETED);
       expect(finalOrder.items).toEqual(order.items);
     }, 15000);
 
@@ -105,11 +95,11 @@ describe("Microservices Integration Tests", () => {
 
       const order1 = (await order1Response.json()) as Order;
       expect(order1).toHaveProperty("id");
-      expect(order1.status).toBe("PENDING");
+      expect(order1.status).toBe(OrderStatus.PENDING);
 
       // Wait for first order to complete before creating second
       const status1 = await waitForOrderStatus(order1.id, 15000);
-      expect(status1).toBe("COMPLETED");
+      expect(status1).toBe(OrderStatus.COMPLETED);
 
       const order2Response = await fetch(`${ORDER_SERVICE_URL}/orders`, {
         method: "POST",
@@ -121,10 +111,10 @@ describe("Microservices Integration Tests", () => {
 
       const order2 = (await order2Response.json()) as Order;
       expect(order2).toHaveProperty("id");
-      expect(order2.status).toBe("PENDING");
+      expect(order2.status).toBe(OrderStatus.PENDING);
 
       const status2 = await waitForOrderStatus(order2.id, 15000);
-      expect(status2).toBe("COMPLETED");
+      expect(status2).toBe(OrderStatus.COMPLETED);
     }, 35000);
   });
 
@@ -189,15 +179,15 @@ describe("Microservices Integration Tests", () => {
       const orderId = order.id;
 
       // Initial status should be PENDING
-      expect(order.status).toBe("PENDING");
+      expect(order.status).toBe(OrderStatus.PENDING);
 
       const finalStatus = await waitForOrderStatus(orderId, 15000);
-      expect(finalStatus).toBe("COMPLETED");
+      expect(finalStatus).toBe(OrderStatus.COMPLETED);
 
       // Verify order went directly from PENDING to COMPLETED
       const finalResponse = await fetch(`${ORDER_SERVICE_URL}/orders/${orderId}`);
       const finalOrder = (await finalResponse.json()) as Order;
-      expect(finalOrder.status).toBe("COMPLETED");
+      expect(finalOrder.status).toBe(OrderStatus.COMPLETED);
     }, 20000);
   });
 });
