@@ -22,39 +22,43 @@ jobs:
       - name: Start services with Docker Compose
         run: docker compose up -d
 
-      - name: Start Order Service
+      - name: Wait for RabbitMQ to be ready
         run: |
-          cd services/order-service
-          bun run start &
+          timeout 60 bash -c 'until docker exec rabbitmq rabbitmq-diagnostics check_running; do 
+            echo "Waiting for RabbitMQ..."
+            sleep 2
+          done'
+          echo "✓ RabbitMQ is ready"
+
+      - name: Start all services
+        run: bun run start-all > /tmp/services.log 2>&1 &
         env:
           RABBITMQ_URL: amqp://admin:admin@localhost:5672
 
-      - name: Start Inventory Service
+      - name: Wait for services to be ready
         run: |
-          cd services/inventory-service
-          bun run start &
-        env:
-          RABBITMQ_URL: amqp://admin:admin@localhost:5672
+          echo "Waiting for services to be healthy..."
 
-      - name: Start Payment Service
-        run: |
-          cd services/payment-service
-          bun run start &
-        env:
-          RABBITMQ_URL: amqp://admin:admin@localhost:5672
+          # Wait for Order Service
+          timeout 30 bash -c 'until curl -sf http://localhost:3001/health >/dev/null 2>&1; do 
+            echo "Waiting for Order Service..."
+            sleep 1
+          done'
+          echo "✓ Order Service is ready"
 
-      # - name: Wait for services to be ready
-      #   run: |
-      #     timeout 60 bash -c '
-      #       echo "Waiting for services to be ready..."
-      #       until \
-      #         curl -sSf http://localhost:3001/ >/dev/null 2>&1 && \
-      #         curl -sSf http://localhost:3002/ >/dev/null 2>&1 && \
-      #         curl -sSf http://localhost:3003/ >/dev/null 2>&1; do
-      #         echo "Services not ready yet, retrying in 2 seconds..."
-      #         sleep 2
-      #       done
-      #     '
+          # Wait for Inventory Service
+          timeout 30 bash -c 'until curl -sf http://localhost:3002/health >/dev/null 2>&1; do 
+            echo "Waiting for Inventory Service..."
+            sleep 1
+          done'
+          echo "✓ Inventory Service is ready"
+
+          # Wait for Payment Service
+          timeout 30 bash -c 'until curl -sf http://localhost:3003/health >/dev/null 2>&1; do 
+            echo "Waiting for Payment Service..."
+            sleep 1
+          done'
+          echo "✓ Payment Service is ready"
 
       - name: Run tests
         run: bun run test
@@ -65,4 +69,15 @@ jobs:
 
       - name: Show service logs on failure
         if: failure()
-        run: docker compose logs
+        run: |
+          echo "=== Order Service Logs ==="
+          cat /tmp/order.log 2>/dev/null || echo "No logs found"
+          echo ""
+          echo "=== Inventory Service Logs ==="
+          cat /tmp/inventory.log 2>/dev/null || echo "No logs found"
+          echo ""
+          echo "=== Payment Service Logs ==="
+          cat /tmp/payment.log 2>/dev/null || echo "No logs found"
+          echo ""
+          echo "=== RabbitMQ Logs ==="
+          docker compose logs rabbitmq

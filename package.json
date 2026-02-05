@@ -6,7 +6,7 @@
     "services/*"
   ],
   "scripts": {
-    "start-all": "bun run dev:order & bun run dev:inventory & bun run dev:payment",
+    "start-all": "bun run start:order & bun run start:inventory & bun run start:payment",
     "test": "bun test services/order-service/tests",
     "start:order": "cd services/order-service && bun run start",
     "start:inventory": "cd services/inventory-service && bun run start",
