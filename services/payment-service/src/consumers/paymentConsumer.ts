@@ -1,6 +1,6 @@
 import type { Channel, ConsumeMessage } from "amqplib";
 import type { InventoryReservedEvent } from "@swap/shared";
-import { QUEUES } from "@swap/shared";
+import { InventoryEventType, QUEUES } from "@swap/shared";
 import { handleInventoryReserved } from "../handlers/paymentEventHandler";
 
 export const startPaymentConsumer = async (channel: Channel) => {
@@ -10,7 +10,19 @@ export const startPaymentConsumer = async (channel: Channel) => {
   channel.consume(QUEUES.INVENTORY_EVENTS, async (msg: ConsumeMessage | null) => {
     if (msg) {
       try {
-        const event: InventoryReservedEvent = JSON.parse(msg.content.toString());
+        const parsed = JSON.parse(msg.content.toString());
+
+        // no other events
+        if (!parsed || parsed.type !== InventoryEventType.INVENTORY_RESERVED) {
+          console.warn(
+            "Ignoring unsupported inventory event type in payment consumer:",
+            parsed && parsed.type,
+          );
+          channel.ack(msg);
+          return;
+        }
+
+        const event: InventoryReservedEvent = parsed;
 
         await handleInventoryReserved(event);
         channel.ack(msg);
