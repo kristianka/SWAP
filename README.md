@@ -5,4 +5,9 @@ Software Architecture Project 2026 - University of Helsinki
 ## Services
 
 - Order service
-- TBA
+- Inventory service
+- Payment service
+
+## Flow
+
+- TBD
