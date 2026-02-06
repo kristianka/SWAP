@@ -4,7 +4,7 @@ import { getChannel } from "../rabbitmq";
 import { hasProcessed, markProcessed } from "../storage/idempotencyStorage";
 
 export const handleInventoryReserved = async (event: InventoryReservedEvent) => {
-  const { orderId, items } = event.data;
+  const { orderId, items, failTransaction } = event.data;
   const idempotencyKey = `payment:${orderId}`;
   const processed = await hasProcessed(idempotencyKey);
 
@@ -20,6 +20,11 @@ export const handleInventoryReserved = async (event: InventoryReservedEvent) => 
   await new Promise((resolve) => setTimeout(resolve, 3000));
 
   try {
+    // Check if we should intentionally fail for testing
+    if (failTransaction) {
+      throw new Error("Transaction intentionally failed for testing purposes");
+    }
+
     // no real payment logic, just mock success
     const amount = items.reduce((sum, item) => sum + item.quantity * 10, 0); // Mock price calculation
     const transactionId = `txn_${Bun.randomUUIDv7()}`;

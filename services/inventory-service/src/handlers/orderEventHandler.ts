@@ -4,7 +4,7 @@ import { getChannel } from "../rabbitmq";
 import { hasProcessed, markProcessed } from "../storage/idempotencyStorage";
 
 export const handleOrderEvent = async (event: OrderCreatedEvent | PaymentFailedEvent) => {
-  console.log(`📦 Received event: ${event.type}`, event.data);
+  console.log(`Received event: ${event.type}`, event.data);
 
   // basic event routing, todo make more elegant
   switch (event.type) {
@@ -26,7 +26,7 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
 
   // Idempotency check, skip if already processed
   if (processed) {
-    console.log(`⏭️ Skipping duplicate ORDER_CREATED for order ${orderId}`);
+    console.log(`Skipping duplicate ORDER_CREATED for order ${orderId}`);
     return true;
   }
 
@@ -46,6 +46,7 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
     data: {
       orderId,
       items: event.data.items,
+      failTransaction: event.data.failTransaction,
     },
   };
 
@@ -67,7 +68,7 @@ const handlePaymentFailed = async (event: PaymentFailedEvent) => {
 
   // Idempotency check - skip if already processed
   if (processed) {
-    console.log(`⏭️ Skipping duplicate PAYMENT_FAILED for order ${orderId}`);
+    console.log(`Skipping duplicate PAYMENT_FAILED for order ${orderId}`);
     return true;
   }
 
