@@ -140,7 +140,7 @@ describe("Microservices Integration Tests", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: [{ product: "test-status-flow", quantity: 1 }],
+          items: [{ product: "keyboard", quantity: 1 }],
         }),
       });
 

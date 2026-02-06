@@ -165,7 +165,7 @@ describe("Microservices Integration Tests - Failure Scenarios", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: [{ product: "success-item", quantity: 1 }],
+          items: [{ product: "mouse", quantity: 1 }],
         }),
       });
 
