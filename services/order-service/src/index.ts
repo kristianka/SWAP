@@ -17,7 +17,8 @@ async function start() {
     // Connect to RabbitMQ
     const channel = await connectToRabbitMQ();
 
-    // Start consuming payment events (to know when order is complete)
+    // Start consuming events that affect order status
+    // (PAYMENT_SUCCESS, PAYMENT_FAILED, INVENTORY_FAILED all come through PAYMENT_EVENTS)
     await startPaymentConsumer(channel);
 
     // Register routes

@@ -67,3 +67,11 @@ export const updateOrderStatus = async (orderId: string, status: OrderStatus): P
   );
   return result.rowCount !== null && result.rowCount > 0;
 };
+
+/**
+ * Reset orders (for testing) - clears all orders and idempotency records
+ */
+export const resetOrders = async (): Promise<void> => {
+  await pool.query(`DELETE FROM orders`);
+  await pool.query(`DELETE FROM processed_events`);
+};
