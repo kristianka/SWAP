@@ -1,5 +1,5 @@
 import type { Channel, ConsumeMessage } from "amqplib";
-import type { OrderCreatedEvent, PaymentFailedEvent } from "@swap/shared";
+import type { OrderCreatedEvent, PaymentFailedEvent, PaymentSuccessEvent } from "@swap/shared";
 import { QUEUES } from "@swap/shared";
 import { handleOrderEvent } from "../handlers/orderEventHandler";
 
@@ -10,7 +10,9 @@ export const startOrderConsumer = (channel: Channel) => {
     }
 
     try {
-      const event: OrderCreatedEvent | PaymentFailedEvent = JSON.parse(msg.content.toString());
+      const event: OrderCreatedEvent | PaymentFailedEvent | PaymentSuccessEvent = JSON.parse(
+        msg.content.toString(),
+      );
       await handleOrderEvent(event);
 
       // acknowledge the message after successful processing

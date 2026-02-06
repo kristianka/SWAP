@@ -42,7 +42,12 @@ export const handleInventoryReserved = async (event: InventoryReservedEvent) => 
     };
 
     const channel = getChannel();
+
+    // Publish to order service (for order completion)
     channel.sendToQueue(QUEUES.PAYMENT_EVENTS, Buffer.from(JSON.stringify(paymentEvent)));
+
+    // Publish to inventory service (for reservation confirmation) - separate queue to avoid competing consumers
+    channel.sendToQueue(QUEUES.ORDER_EVENTS, Buffer.from(JSON.stringify(paymentEvent)));
 
     console.log(`Published ${PaymentEventType.PAYMENT_SUCCESS} for order ${orderId}`);
 
@@ -61,7 +66,12 @@ export const handleInventoryReserved = async (event: InventoryReservedEvent) => 
     };
 
     const channel = getChannel();
+
+    // Publish to order service (for order cancellation)
     channel.sendToQueue(QUEUES.PAYMENT_EVENTS, Buffer.from(JSON.stringify(paymentFailedEvent)));
+    // Publish to inventory service (for reservation release) - separate queue to avoid competing consumers
+
+    channel.sendToQueue(QUEUES.ORDER_EVENTS, Buffer.from(JSON.stringify(paymentFailedEvent)));
 
     console.log(`Published ${PaymentEventType.PAYMENT_FAILED} for order ${orderId}`);
 
