@@ -1,11 +1,17 @@
 import type { FastifyInstance } from "fastify";
-import { getOrders, getOrderById } from "../storage/orderStorage";
+import { getOrders, getOrderById, resetOrders } from "../storage/orderStorage";
 import { createOrderHandler } from "../handlers/orderHandler";
 
 export const registerOrderRoutes = (app: FastifyInstance) => {
   // Get all orders
   app.get("/orders", async () => {
     return await getOrders();
+  });
+
+  // Reset orders (for testing)
+  app.post("/orders/reset", async () => {
+    await resetOrders();
+    return { message: "Orders reset successfully" };
   });
 
   // Get order by ID

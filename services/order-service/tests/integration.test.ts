@@ -1,52 +1,18 @@
 import { OrderStatus } from "@swap/shared";
 import type { Order } from "@swap/shared/types";
 import { describe, test, expect, beforeAll } from "bun:test";
-
-const ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL || "http://localhost:3001";
-const INVENTORY_SERVICE_URL = process.env.INVENTORY_SERVICE_URL || "http://localhost:3002";
-const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL || "http://localhost:3003";
-
-// Helper to wait for order to reach a terminal status
-const waitForOrderStatus = async (orderId: string, maxWaitMs: number = 10000) => {
-  const startTime = Date.now();
-  const pollInterval = 500;
-
-  while (Date.now() - startTime < maxWaitMs) {
-    const response = await fetch(`${ORDER_SERVICE_URL}/orders/${orderId}`);
-    const order = (await response.json()) as Order;
-
-    if (["COMPLETED", "CANCELLED"].includes(order.status)) {
-      return order.status;
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, pollInterval));
-  }
-
-  throw new Error(`Order ${orderId} did not reach terminal status within ${maxWaitMs}ms`);
-};
+import {
+  ORDER_SERVICE_URL,
+  checkServicesHealth,
+  resetAllServices,
+  waitForOrderStatus,
+} from "./testSetup";
 
 describe("Microservices Integration Tests", () => {
-  // healthcheck
   beforeAll(async () => {
-    const services = [
-      { name: "Order Service", url: `${ORDER_SERVICE_URL}/health` },
-      { name: "Inventory Service", url: `${INVENTORY_SERVICE_URL}/health` },
-      { name: "Payment Service", url: `${PAYMENT_SERVICE_URL}/health` },
-    ];
-
-    for (const service of services) {
-      try {
-        const response = await fetch(service.url);
-
-        if (!response.ok) {
-          throw new Error(`${service.name} health check failed`);
-        }
-      } catch (error) {
-        throw new Error(
-          `${service.name} is not running. Please start all services before running tests.`,
-        );
-      }
-    }
+    await checkServicesHealth();
+    // Reset all services to clean state before running tests
+    await resetAllServices();
   });
 
   describe("Happy Path", () => {
@@ -174,7 +140,7 @@ describe("Microservices Integration Tests", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: [{ product: "test-status-flow", quantity: 1 }],
+          items: [{ product: "keyboard", quantity: 1 }],
         }),
       });
 
