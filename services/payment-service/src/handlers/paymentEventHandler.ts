@@ -25,6 +25,7 @@ export const handleInventoryReserved = async (event: InventoryReservedEvent) => 
       throw new Error("Transaction intentionally failed for testing purposes");
     }
 
+    const channel = getChannel();
     // no real payment logic, just mock success
     const amount = items.reduce((sum, item) => sum + item.quantity * 10, 0); // Mock price calculation
     const transactionId = `txn_${Bun.randomUUIDv7()}`;
@@ -41,8 +42,6 @@ export const handleInventoryReserved = async (event: InventoryReservedEvent) => 
       },
     };
 
-    const channel = getChannel();
-
     // Publish to order service (for order completion)
     channel.sendToQueue(QUEUES.PAYMENT_EVENTS, Buffer.from(JSON.stringify(paymentEvent)));
 
@@ -54,7 +53,7 @@ export const handleInventoryReserved = async (event: InventoryReservedEvent) => 
     // Mark as processed after successful handling
     await markProcessed(idempotencyKey);
   } catch (error) {
-    console.error(`❌ Payment failed for order ${orderId}:`, error);
+    console.error(`Payment failed for order ${orderId}!`, error);
 
     // Publish PAYMENT_FAILED event
     const paymentFailedEvent: PaymentFailedEvent = {
@@ -69,8 +68,8 @@ export const handleInventoryReserved = async (event: InventoryReservedEvent) => 
 
     // Publish to order service (for order cancellation)
     channel.sendToQueue(QUEUES.PAYMENT_EVENTS, Buffer.from(JSON.stringify(paymentFailedEvent)));
-    // Publish to inventory service (for reservation release) - separate queue to avoid competing consumers
 
+    // Publish to inventory service (for reservation release) - separate queue to avoid competing consumers
     channel.sendToQueue(QUEUES.ORDER_EVENTS, Buffer.from(JSON.stringify(paymentFailedEvent)));
 
     console.log(`Published ${PaymentEventType.PAYMENT_FAILED} for order ${orderId}`);
