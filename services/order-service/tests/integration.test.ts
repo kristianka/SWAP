@@ -1,26 +1,12 @@
 import { OrderStatus } from "@swap/shared";
 import type { Order } from "@swap/shared/types";
 import { describe, test, expect, beforeAll } from "bun:test";
-import { ORDER_SERVICE_URL, checkServicesHealth, resetAllServices } from "./testSetup";
-
-// Helper to wait for order to reach a terminal status
-const waitForOrderStatus = async (orderId: string, maxWaitMs: number = 10000) => {
-  const startTime = Date.now();
-  const pollInterval = 500;
-
-  while (Date.now() - startTime < maxWaitMs) {
-    const response = await fetch(`${ORDER_SERVICE_URL}/orders/${orderId}`);
-    const order = (await response.json()) as Order;
-
-    if (["COMPLETED", "CANCELLED"].includes(order.status)) {
-      return order.status;
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, pollInterval));
-  }
-
-  throw new Error(`Order ${orderId} did not reach terminal status within ${maxWaitMs}ms`);
-};
+import {
+  ORDER_SERVICE_URL,
+  checkServicesHealth,
+  resetAllServices,
+  waitForOrderStatus,
+} from "./testSetup";
 
 describe("Microservices Integration Tests", () => {
   beforeAll(async () => {

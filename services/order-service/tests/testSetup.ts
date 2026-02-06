@@ -2,6 +2,9 @@
  * Shared test utilities and setup for integration tests
  */
 
+import { OrderStatus } from "@swap/shared/constants";
+import type { Order } from "@swap/shared/types";
+
 export const ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL || "http://localhost:3001";
 export const INVENTORY_SERVICE_URL = process.env.INVENTORY_SERVICE_URL || "http://localhost:3002";
 export const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL || "http://localhost:3003";
@@ -51,4 +54,23 @@ export const resetAllServices = async () => {
 export const seedInventory = async () => {
   const response = await fetch(`${INVENTORY_SERVICE_URL}/inventory/seed`, { method: "POST" });
   return response.json();
+};
+
+// Helper to wait for order to reach a terminal status
+export const waitForOrderStatus = async (orderId: string, maxWaitMs: number = 10000) => {
+  const startTime = Date.now();
+  const pollInterval = 500;
+
+  while (Date.now() - startTime < maxWaitMs) {
+    const response = await fetch(`${ORDER_SERVICE_URL}/orders/${orderId}`);
+    const order = (await response.json()) as Order;
+
+    if ([OrderStatus.COMPLETED, OrderStatus.CANCELLED].includes(order.status)) {
+      return order.status;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, pollInterval));
+  }
+
+  throw new Error(`Order ${orderId} did not reach terminal status within ${maxWaitMs}ms`);
 };
