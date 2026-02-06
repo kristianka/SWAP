@@ -38,8 +38,8 @@ Event-driven microservices architecture using **RabbitMQ** as the message broker
         OrderService-->>Client: 200 OK
 
         RabbitMQ->>InventoryService: Consume ORDER_CREATED
-        InventoryService->>InventoryService: Reserve Inventory
-        Note over InventoryService: 2.5s processing
+        InventoryService->>InventoryService: Check & Reserve Inventory
+        Note over InventoryService: 1.5s processing
         InventoryService->>RabbitMQ: INVENTORY_RESERVED → QUEUES.INVENTORY_EVENTS
 
         RabbitMQ->>PaymentService: Consume INVENTORY_RESERVED
@@ -49,14 +49,24 @@ Event-driven microservices architecture using **RabbitMQ** as the message broker
 
         RabbitMQ->>OrderService: Consume PAYMENT_SUCCESS
         OrderService->>OrderService: Update Order (COMPLETED)
+        RabbitMQ->>InventoryService: Consume PAYMENT_SUCCESS
+        InventoryService->>InventoryService: Confirm Reservation (deduct stock)
 
-        Note over Client,PaymentService: Failure Path
+        Note over Client,PaymentService: Payment Failure Path (Compensating Transaction)
 
         PaymentService->>RabbitMQ: PAYMENT_FAILED → QUEUES.PAYMENT_EVENTS
         RabbitMQ->>OrderService: Consume PAYMENT_FAILED
         OrderService->>OrderService: Update Order (CANCELLED)
         RabbitMQ->>InventoryService: Consume PAYMENT_FAILED
-        InventoryService->>InventoryService: Release Inventory
+        InventoryService->>InventoryService: Release Inventory (compensate)
+
+        Note over Client,PaymentService: Inventory Failure Path
+
+        RabbitMQ->>InventoryService: Consume ORDER_CREATED
+        InventoryService->>InventoryService: Check Inventory (insufficient)
+        InventoryService->>RabbitMQ: INVENTORY_FAILED → QUEUES.INVENTORY_EVENTS
+        RabbitMQ->>OrderService: Consume INVENTORY_FAILED
+        OrderService->>OrderService: Update Order (CANCELLED)
 ```
 
 ## Testing
@@ -69,14 +79,16 @@ Happy path (=successful) path is the scenario when everything goes fine: user cr
 
 ### Failure Scenarios
 
-To test the cancellation flow, pass `failTransaction: true` in the order creation request:
+#### Payment Failure (with compensating transaction)
+
+To test the payment failure flow, pass `failTransaction: true` in the order creation request:
 
 ```json
 {
   "items": [
     {
-      "product": "Widget",
-      "quantity": 2
+      "product": "laptop",
+      "quantity": 1
     }
   ],
   "failTransaction": true
@@ -89,7 +101,39 @@ When this flag is set:
 2. Inventory is reserved successfully
 3. Payment intentionally fails with "Transaction intentionally failed for testing purposes"
 4. Order status is updated to CANCELLED
-5. Inventory reservation is released
+5. Inventory reservation is released (compensating transaction)
+
+#### Inventory Failure
+
+To test the inventory failure path, order a product that doesn't exist or request more than available:
+
+```bash
+# Non-existent product
+curl -X POST http://localhost:3001/orders \
+  -H "Content-Type: application/json" \
+  -d '{"items": [{"product": "non-existent", "quantity": 1}]}'
+
+# Excessive quantity
+curl -X POST http://localhost:3001/orders \
+  -H "Content-Type: application/json" \
+  -d '{"items": [{"product": "laptop", "quantity": 999}]}'
+```
+
+When inventory check fails:
+
+1. Order is created in PENDING status
+2. Inventory check fails (product not found or insufficient stock)
+3. INVENTORY_FAILED event is published
+4. Order status is updated to CANCELLED
+5. No payment is attempted
+
+### Seed Inventory
+
+Before testing, seed the inventory with initial stock:
+
+```bash
+curl -X POST http://localhost:3002/inventory/seed
+```
 
 ## Running
 
