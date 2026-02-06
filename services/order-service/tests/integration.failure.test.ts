@@ -105,38 +105,41 @@ describe("Microservices Integration Tests - Failure Scenarios", () => {
     }, 20000);
 
     test("should handle multiple concurrent failed orders", async () => {
-      // Create two orders that will fail
-      const order1Response = await fetch(`${ORDER_SERVICE_URL}/orders`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items: [{ product: "monitor", quantity: 1 }],
-          failTransaction: true,
+      // Create two orders that will fail (in parallel)
+      const [order1Response, order2Response] = await Promise.all([
+        fetch(`${ORDER_SERVICE_URL}/orders`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            items: [{ product: "monitor", quantity: 1 }],
+            failTransaction: true,
+          }),
         }),
-      });
+        fetch(`${ORDER_SERVICE_URL}/orders`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            items: [{ product: "keyboard", quantity: 2 }],
+            failTransaction: true,
+          }),
+        }),
+      ]);
 
       const order1 = (await order1Response.json()) as Order;
+      const order2 = (await order2Response.json()) as Order;
+
       expect(order1).toHaveProperty("id");
       expect(order1.status).toBe(OrderStatus.PENDING);
-
-      // Wait for first order to be cancelled before creating second
-      const status1 = await waitForOrderStatus(order1.id, 15000);
-      expect(status1).toBe(OrderStatus.CANCELLED);
-
-      const order2Response = await fetch(`${ORDER_SERVICE_URL}/orders`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items: [{ product: "keyboard", quantity: 2 }],
-          failTransaction: true,
-        }),
-      });
-
-      const order2 = (await order2Response.json()) as Order;
       expect(order2).toHaveProperty("id");
       expect(order2.status).toBe(OrderStatus.PENDING);
 
-      const status2 = await waitForOrderStatus(order2.id, 15000);
+      // Wait for both orders to be cancelled concurrently
+      const [status1, status2] = await Promise.all([
+        waitForOrderStatus(order1.id, 15000),
+        waitForOrderStatus(order2.id, 15000),
+      ]);
+
+      expect(status1).toBe(OrderStatus.CANCELLED);
       expect(status2).toBe(OrderStatus.CANCELLED);
     }, 35000);
 
