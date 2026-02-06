@@ -14,53 +14,57 @@ Event-driven microservices architecture using **RabbitMQ** as the message broker
 
 ### RabbitMQ Queues
 
-- `order-events` - Order lifecycle events (ORDER_CREATED, ORDER_CANCELLED)
-- `inventory-events` - Inventory operations (INVENTORY_RESERVED, INVENTORY_FAILED, INVENTORY_RELEASED)
-- `payment-events` - Payment outcomes (PAYMENT_SUCCESS, PAYMENT_FAILED)
+| Queue              | Constant                  | Events                                                                |
+| ------------------ | ------------------------- | --------------------------------------------------------------------- |
+| `order-events`     | `QUEUES.ORDER_EVENTS`     | `OrderEventType.ORDER_CREATED`                                        |
+| `inventory-events` | `QUEUES.INVENTORY_EVENTS` | `InventoryEventType.INVENTORY_RESERVED`                               |
+| `payment-events`   | `QUEUES.PAYMENT_EVENTS`   | `PaymentEventType.PAYMENT_SUCCESS`, `PaymentEventType.PAYMENT_FAILED` |
 
 ## Flow
 
 ```mermaid
-sequenceDiagram
-    participant Client
-    participant OrderService as Order Service
-    participant RabbitMQ
-    participant InventoryService as Inventory Service
-    participant PaymentService as Payment Service
+    sequenceDiagram
+        participant Client
+        participant OrderService as Order Service
+        participant RabbitMQ
+        participant InventoryService as Inventory Service
+        participant PaymentService as Payment Service
 
-    Note over Client,PaymentService: Happy Path - Successful Order
-    Client->>OrderService: POST /orders (create order)
-    OrderService->>OrderService: Create Order (PENDING)
-    OrderService->>OrderQueue: Publish ORDER_CREATED
-    OrderService-->>Client: 200 OK (order created)
-RabbitMQ: Publish ORDER_CREATED (order-events)
-    OrderService-->>Client: 200 OK (order created)
+        Note over Client,PaymentService: Happy Path
 
-    RabbitMQ->>InventoryService: Consume ORDER_CREATED
-    InventoryService->>InventoryService: Check & Reserve Inventory
-    Note over InventoryService: Simulated 2.5s processing
-    InventoryService->>RabbitMQ: Publish INVENTORY_RESERVED (inventory-events)
+        Client->>OrderService: POST /orders
+        OrderService->>OrderService: Create Order (PENDING)
+        OrderService->>RabbitMQ: ORDER_CREATED → QUEUES.ORDER_EVENTS
+        OrderService-->>Client: 200 OK
 
-    RabbitMQ->>PaymentService: Consume INVENTORY_RESERVED
-    PaymentService->>PaymentService: Process Payment
-    Note over PaymentService: Simulated 3s processing
-    PaymentService->>RabbitMQ: Publish PAYMENT_SUCCESS (payment-events)
+        RabbitMQ->>InventoryService: Consume ORDER_CREATED
+        InventoryService->>InventoryService: Reserve Inventory
+        Note over InventoryService: 2.5s processing
+        InventoryService->>RabbitMQ: INVENTORY_RESERVED → QUEUES.INVENTORY_EVENTS
 
-    RabbitMQ->>OrderService: Consume PAYMENT_SUCCESS
-    OrderService->>OrderService: Update Order Status (COMPLETED)
+        RabbitMQ->>PaymentService: Consume INVENTORY_RESERVED
+        PaymentService->>PaymentService: Process Payment
+        Note over PaymentService: 3s processing
+        PaymentService->>RabbitMQ: PAYMENT_SUCCESS → QUEUES.PAYMENT_EVENTS
 
-    Note over Client,PaymentService: Failure Path - Payment Failed
-    PaymentService->>RabbitMQ: Publish PAYMENT_FAILED (payment-events)
-    RabbitMQ->>OrderService: Consume PAYMENT_FAILED
-    OrderService->>OrderService: Update Order Status (CANCELLED)
-    RabbitMQ
+        RabbitMQ->>OrderService: Consume PAYMENT_SUCCESS
+        OrderService->>OrderService: Update Order (COMPLETED)
+
+        Note over Client,PaymentService: Failure Path
+
+        PaymentService->>RabbitMQ: PAYMENT_FAILED → QUEUES.PAYMENT_EVENTS
+        RabbitMQ->>OrderService: Consume PAYMENT_FAILED
+        OrderService->>OrderService: Update Order (CANCELLED)
+        RabbitMQ->>InventoryService: Consume PAYMENT_FAILED
+        InventoryService->>InventoryService: Release Inventory
 ```
 
 ## Running
 
-- See folders for instructions
+See individual service folders for instructions.
 
 ## Notes
 
-- Types are shared to ease development
-- All services are in same repo to ease development
+- Types are shared via `@swap/shared` package
+- Monorepo structure for ease of development
+- All services use idempotency keys for message deduplication
