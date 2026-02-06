@@ -1,52 +1,18 @@
 import { OrderStatus } from "@swap/shared";
 import type { Order } from "@swap/shared/types";
 import { describe, test, expect, beforeAll } from "bun:test";
-
-const ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL || "http://localhost:3001";
-const INVENTORY_SERVICE_URL = process.env.INVENTORY_SERVICE_URL || "http://localhost:3002";
-const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL || "http://localhost:3003";
-
-// Helper to wait for order to reach a terminal status
-const waitForOrderStatus = async (orderId: string, maxWaitMs: number = 10000) => {
-  const startTime = Date.now();
-  const pollInterval = 500;
-
-  while (Date.now() - startTime < maxWaitMs) {
-    const response = await fetch(`${ORDER_SERVICE_URL}/orders/${orderId}`);
-    const order = (await response.json()) as Order;
-
-    if (["COMPLETED", "CANCELLED"].includes(order.status)) {
-      return order.status;
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, pollInterval));
-  }
-
-  throw new Error(`Order ${orderId} did not reach terminal status within ${maxWaitMs}ms`);
-};
+import {
+  ORDER_SERVICE_URL,
+  checkServicesHealth,
+  resetAllServices,
+  waitForOrderStatus,
+} from "./testSetup";
 
 describe("Microservices Integration Tests", () => {
-  // healthcheck
   beforeAll(async () => {
-    const services = [
-      { name: "Order Service", url: `${ORDER_SERVICE_URL}/health` },
-      { name: "Inventory Service", url: `${INVENTORY_SERVICE_URL}/health` },
-      { name: "Payment Service", url: `${PAYMENT_SERVICE_URL}/health` },
-    ];
-
-    for (const service of services) {
-      try {
-        const response = await fetch(service.url);
-
-        if (!response.ok) {
-          throw new Error(`${service.name} health check failed`);
-        }
-      } catch (error) {
-        throw new Error(
-          `${service.name} is not running. Please start all services before running tests.`,
-        );
-      }
-    }
+    await checkServicesHealth();
+    // Reset all services to clean state before running tests
+    await resetAllServices();
   });
 
   describe("Happy Path", () => {
@@ -84,36 +50,39 @@ describe("Microservices Integration Tests", () => {
     }, 15000);
 
     test("should handle multiple concurrent orders", async () => {
-      // Test with just 2 orders to avoid overwhelming the services
-      const order1Response = await fetch(`${ORDER_SERVICE_URL}/orders`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items: [{ product: "keyboard", quantity: 1 }],
+      // Create two orders concurrently
+      const [order1Response, order2Response] = await Promise.all([
+        fetch(`${ORDER_SERVICE_URL}/orders`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            items: [{ product: "keyboard", quantity: 1 }],
+          }),
         }),
-      });
+        fetch(`${ORDER_SERVICE_URL}/orders`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            items: [{ product: "monitor", quantity: 2 }],
+          }),
+        }),
+      ]);
 
       const order1 = (await order1Response.json()) as Order;
+      const order2 = (await order2Response.json()) as Order;
+
       expect(order1).toHaveProperty("id");
       expect(order1.status).toBe(OrderStatus.PENDING);
-
-      // Wait for first order to complete before creating second
-      const status1 = await waitForOrderStatus(order1.id, 15000);
-      expect(status1).toBe(OrderStatus.COMPLETED);
-
-      const order2Response = await fetch(`${ORDER_SERVICE_URL}/orders`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items: [{ product: "monitor", quantity: 2 }],
-        }),
-      });
-
-      const order2 = (await order2Response.json()) as Order;
       expect(order2).toHaveProperty("id");
       expect(order2.status).toBe(OrderStatus.PENDING);
 
-      const status2 = await waitForOrderStatus(order2.id, 15000);
+      // Wait for both orders to complete concurrently
+      const [status1, status2] = await Promise.all([
+        waitForOrderStatus(order1.id, 15000),
+        waitForOrderStatus(order2.id, 15000),
+      ]);
+
+      expect(status1).toBe(OrderStatus.COMPLETED);
       expect(status2).toBe(OrderStatus.COMPLETED);
     }, 35000);
   });
@@ -171,7 +140,7 @@ describe("Microservices Integration Tests", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: [{ product: "test-status-flow", quantity: 1 }],
+          items: [{ product: "keyboard", quantity: 1 }],
         }),
       });
 

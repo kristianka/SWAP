@@ -18,6 +18,7 @@ export interface Order {
   items: OrderItem[];
   status: OrderStatus;
   createdAt: string;
+  failTransaction?: boolean; // For testing failure scenarios
 }
 
 // ===========================================
@@ -38,6 +39,7 @@ export interface InventoryReservedEvent {
   data: {
     orderId: string;
     items: OrderItem[];
+    failTransaction?: boolean;
   };
 }
 

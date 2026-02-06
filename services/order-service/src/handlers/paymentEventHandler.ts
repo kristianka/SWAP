@@ -1,20 +1,28 @@
-import type { PaymentSuccessEvent, PaymentFailedEvent } from "@swap/shared";
-import { PaymentEventType, OrderStatus } from "@swap/shared";
+import type { PaymentSuccessEvent, PaymentFailedEvent, InventoryFailedEvent } from "@swap/shared";
+import { PaymentEventType, InventoryEventType, OrderStatus } from "@swap/shared";
 import { updateOrderStatus } from "../storage/orderStorage";
 import { hasProcessed, markProcessed } from "../storage/idempotencyStorage";
 
-export const handlePaymentEvent = async (event: PaymentSuccessEvent | PaymentFailedEvent) => {
+type OrderUpdateEvent = PaymentSuccessEvent | PaymentFailedEvent | InventoryFailedEvent;
+
+/**
+ * Handles events that affect order status:
+ * - PAYMENT_SUCCESS: order completed
+ * - PAYMENT_FAILED: order cancelled (triggers inventory release)
+ * - INVENTORY_FAILED: order cancelled (no payment attempted)
+ */
+export const handlePaymentEvent = async (event: OrderUpdateEvent) => {
   const orderId = event.data.orderId;
-  const idempotencyKey = `payment:${orderId}:${event.type}`;
+  const idempotencyKey = `order-update:${orderId}:${event.type}`;
   const processed = await hasProcessed(idempotencyKey);
 
   // Idempotency check - skip if already processed
   if (processed) {
-    console.log(`⏭️ Skipping duplicate payment event for order ${orderId}`);
+    console.log(`⏭️ Skipping duplicate event for order ${orderId}`);
     return;
   }
 
-  console.log(`Received payment event: ${event.type}`, event.data);
+  console.log(`Received event: ${event.type}`, event.data);
 
   switch (event.type) {
     case PaymentEventType.PAYMENT_SUCCESS:
@@ -23,8 +31,11 @@ export const handlePaymentEvent = async (event: PaymentSuccessEvent | PaymentFai
     case PaymentEventType.PAYMENT_FAILED:
       await handlePaymentFailed(event);
       break;
+    case InventoryEventType.INVENTORY_FAILED:
+      await handleInventoryFailed(event);
+      break;
     default:
-      console.warn(`Unknown payment event type: ${event}`);
+      console.warn(`Unknown event type: ${event}`);
       return; // Don't mark as processed for unknown events
   }
 
@@ -55,6 +66,20 @@ const handlePaymentFailed = async (event: PaymentFailedEvent) => {
 
   if (updated) {
     console.log(`Order ${orderId} cancelled due to payment failure`);
+  } else {
+    console.error(`Failed to cancel order ${orderId} - order not found`);
+  }
+};
+
+const handleInventoryFailed = async (event: InventoryFailedEvent) => {
+  const { orderId, reason } = event.data;
+  console.log(`Inventory failed for order ${orderId}: ${reason}`);
+
+  // Update order status to CANCELLED - no payment was attempted
+  const updated = await updateOrderStatus(orderId, OrderStatus.CANCELLED);
+
+  if (updated) {
+    console.log(`Order ${orderId} cancelled due to inventory failure`);
   } else {
     console.error(`Failed to cancel order ${orderId} - order not found`);
   }

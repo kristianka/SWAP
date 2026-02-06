@@ -43,6 +43,17 @@ export const initDatabase = async (): Promise<void> => {
       )
     `);
 
+    // Create reservations table to track inventory reservations per order
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS reservations (
+        order_id TEXT PRIMARY KEY,
+        items JSONB NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        confirmed_at TIMESTAMP
+      )
+    `);
+
     console.log("Inventory database initialized");
   } catch (error) {
     console.error("Failed to initialize inventory database:", error);
