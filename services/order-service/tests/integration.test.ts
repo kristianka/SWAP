@@ -84,36 +84,39 @@ describe("Microservices Integration Tests", () => {
     }, 15000);
 
     test("should handle multiple concurrent orders", async () => {
-      // Test with just 2 orders to avoid overwhelming the services
-      const order1Response = await fetch(`${ORDER_SERVICE_URL}/orders`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items: [{ product: "keyboard", quantity: 1 }],
+      // Create two orders concurrently
+      const [order1Response, order2Response] = await Promise.all([
+        fetch(`${ORDER_SERVICE_URL}/orders`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            items: [{ product: "keyboard", quantity: 1 }],
+          }),
         }),
-      });
+        fetch(`${ORDER_SERVICE_URL}/orders`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            items: [{ product: "monitor", quantity: 2 }],
+          }),
+        }),
+      ]);
 
       const order1 = (await order1Response.json()) as Order;
+      const order2 = (await order2Response.json()) as Order;
+
       expect(order1).toHaveProperty("id");
       expect(order1.status).toBe(OrderStatus.PENDING);
-
-      // Wait for first order to complete before creating second
-      const status1 = await waitForOrderStatus(order1.id, 15000);
-      expect(status1).toBe(OrderStatus.COMPLETED);
-
-      const order2Response = await fetch(`${ORDER_SERVICE_URL}/orders`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items: [{ product: "monitor", quantity: 2 }],
-        }),
-      });
-
-      const order2 = (await order2Response.json()) as Order;
       expect(order2).toHaveProperty("id");
       expect(order2.status).toBe(OrderStatus.PENDING);
 
-      const status2 = await waitForOrderStatus(order2.id, 15000);
+      // Wait for both orders to complete concurrently
+      const [status1, status2] = await Promise.all([
+        waitForOrderStatus(order1.id, 15000),
+        waitForOrderStatus(order2.id, 15000),
+      ]);
+
+      expect(status1).toBe(OrderStatus.COMPLETED);
       expect(status2).toBe(OrderStatus.COMPLETED);
     }, 35000);
   });
