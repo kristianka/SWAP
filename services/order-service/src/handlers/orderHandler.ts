@@ -6,13 +6,14 @@ import { getChannel } from "../rabbitmq";
 
 interface CreateOrderBody {
   items: OrderItem[];
+  failTransaction?: boolean;
 }
 
 export const createOrderHandler = async (
   req: FastifyRequest<{ Body: CreateOrderBody }>,
   reply: FastifyReply,
 ) => {
-  const { items } = req.body;
+  const { items, failTransaction } = req.body;
 
   // TODO: Add more and proper validation, like sanitize inputs
   if (!items || items.length === 0) {
@@ -25,6 +26,7 @@ export const createOrderHandler = async (
     items,
     status: OrderStatus.PENDING,
     createdAt: new Date().toISOString(),
+    failTransaction,
   };
 
   await addOrder(order);
