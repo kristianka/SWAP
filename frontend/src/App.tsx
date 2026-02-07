@@ -12,6 +12,10 @@ import { OrderStatus, type Order } from "@swap/shared";
 import { useEffect, useState } from "react";
 import "./index.css";
 import { CreateOrderButton } from "./components/CreateOrderButton";
+import { Badge } from "./components/ui/badge";
+import { Spinner } from "./components/ui/spinner";
+import { Button } from "./components/ui/button";
+import { CheckCircle2, XCircle, RefreshCw } from "lucide-react";
 
 // Database-specific interfaces (not in shared types as they're storage implementation details)
 interface InventoryItem {
@@ -83,10 +87,16 @@ function App() {
   console.log("Payments:", payments);
 
   return (
-    <div>
+    <div className="m-5">
       <h1 className="text-2xl font-bold mb-4">Software Architecture Project</h1>
 
-      <CreateOrderButton onOrderCreated={fetchAllData} />
+      <div className="flex gap-2 mb-4">
+        <CreateOrderButton onOrderCreated={fetchAllData} />
+        <Button variant="outline" onClick={fetchAllData}>
+          <RefreshCw className="size-4 mr-2" />
+          Refresh
+        </Button>
+      </div>
 
       <Table>
         <TableCaption>Orders database</TableCaption>
@@ -117,19 +127,29 @@ function App() {
                   ))}
                 </TableCell>
                 <TableCell>
-                  <span
+                  <Badge
+                    variant={
+                      order.status === OrderStatus.COMPLETED
+                        ? "default"
+                        : order.status === OrderStatus.CANCELLED
+                          ? "destructive"
+                          : order.status === OrderStatus.PROCESSING
+                            ? "secondary"
+                            : "outline"
+                    }
                     className={
                       order.status === OrderStatus.COMPLETED
-                        ? "text-green-600"
-                        : order.status === OrderStatus.CANCELLED
-                          ? "text-red-600"
-                          : order.status === OrderStatus.PROCESSING
-                            ? "text-blue-600"
-                            : "text-yellow-600"
+                        ? "bg-green-600 hover:bg-green-600/80"
+                        : ""
                     }
                   >
+                    {order.status === OrderStatus.PROCESSING && <Spinner className="mr-1 size-3" />}
+                    {order.status === OrderStatus.COMPLETED && (
+                      <CheckCircle2 className="mr-1 size-3" />
+                    )}
+                    {order.status === OrderStatus.CANCELLED && <XCircle className="mr-1 size-3" />}
                     {order.status}
-                  </span>
+                  </Badge>
                 </TableCell>
                 <TableCell>{new Date(order.createdAt).toLocaleString()}</TableCell>
               </TableRow>

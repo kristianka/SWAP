@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Button } from "./ui/button";
 
 interface CreateOrderButtonProps {
   onOrderCreated: () => void;
@@ -45,15 +46,34 @@ export const CreateOrderButton = ({ onOrderCreated }: CreateOrderButtonProps) =>
         throw new Error(`Failed to create order: ${response.statusText}`);
       }
 
+      const order = await response.json();
       setSuccess(true);
 
-      // Start polling for 30 seconds
+      // Start polling until order is completed/cancelled (max 30 seconds)
       setPolling(true);
-      const intervalId = setInterval(() => {
+      const intervalId = setInterval(async () => {
         onOrderCreated();
+
+        // Check if order has reached a terminal state
+        try {
+          const statusResponse = await fetch(`http://localhost:3001/orders/${order.id}`);
+          if (statusResponse.ok) {
+            const orderData = await statusResponse.json();
+            if (orderData.status === "COMPLETED" || orderData.status === "CANCELLED") {
+              clearInterval(intervalId);
+              // Wait a bit for inventory to be confirmed, then do a final refresh
+              setTimeout(() => {
+                onOrderCreated();
+                setPolling(false);
+              }, 3000);
+            }
+          }
+        } catch {
+          // Ignore errors, continue polling
+        }
       }, 500);
 
-      // Stop polling after 30 seconds
+      // Stop polling after 30 seconds as fallback
       setTimeout(() => {
         clearInterval(intervalId);
         setPolling(false);
@@ -69,19 +89,9 @@ export const CreateOrderButton = ({ onOrderCreated }: CreateOrderButtonProps) =>
 
   return (
     <div className="mb-6">
-      <button
-        onClick={createDummyOrder}
-        disabled={loading || polling}
-        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-      >
+      <Button onClick={createDummyOrder} disabled={loading || polling}>
         {loading ? "Creating Order..." : polling ? "Polling..." : "Create Dummy Order"}
-      </button>
-      {error && <p className="mt-2 text-sm text-red-600">Error: {error}</p>}
-      {success && (
-        <p className="mt-2 text-sm text-green-600">
-          Order created successfully! Polling for updates...
-        </p>
-      )}
+      </Button>
     </div>
   );
 };
