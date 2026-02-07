@@ -12,8 +12,6 @@ type OrderUpdateEvent = PaymentSuccessEvent | PaymentFailedEvent | InventoryFail
  * - INVENTORY_FAILED (from inventory-service)
  */
 export const startPaymentConsumer = async (channel: Channel) => {
-  await channel.assertQueue(QUEUES.PAYMENT_EVENTS);
-
   channel.consume(QUEUES.PAYMENT_EVENTS, async (msg: ConsumeMessage | null) => {
     if (msg) {
       try {
