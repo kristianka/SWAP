@@ -105,13 +105,14 @@ function App() {
             <TableHead className="w-[200px]">ID</TableHead>
             <TableHead>Items</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>Error</TableHead>
             <TableHead>Created At</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {orders.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={4} className="text-center">
+              <TableCell colSpan={5} className="text-center">
                 No orders found
               </TableCell>
             </TableRow>
@@ -150,6 +151,13 @@ function App() {
                     {order.status === OrderStatus.CANCELLED && <XCircle className="mr-1 size-3" />}
                     {order.status}
                   </Badge>
+                </TableCell>
+                <TableCell>
+                  {order.errorMessage ? (
+                    <span className="text-red-600 text-sm">{order.errorMessage}</span>
+                  ) : (
+                    <span className="text-gray-400">—</span>
+                  )}
                 </TableCell>
                 <TableCell>{new Date(order.createdAt).toLocaleString()}</TableCell>
               </TableRow>

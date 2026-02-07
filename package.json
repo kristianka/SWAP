@@ -2,6 +2,7 @@
   "name": "swap-microservices",
   "private": true,
   "workspaces": [
+    "frontend",
     "shared",
     "services/*"
   ],
