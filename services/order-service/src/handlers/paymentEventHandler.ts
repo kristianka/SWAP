@@ -13,16 +13,17 @@ type OrderUpdateEvent = PaymentSuccessEvent | PaymentFailedEvent | InventoryFail
  */
 export const handlePaymentEvent = async (event: OrderUpdateEvent) => {
   const orderId = event.data.orderId;
+  const sagaId = event.correlationId;
   const idempotencyKey = `order-update:${orderId}:${event.type}`;
   const processed = await hasProcessed(idempotencyKey);
 
   // Idempotency check - skip if already processed
   if (processed) {
-    console.log(`⏭️ Skipping duplicate event for order ${orderId}`);
+    console.log(`[saga:${sagaId}] Skipping duplicate event for order ${orderId}`);
     return;
   }
 
-  console.log(`Received event: ${event.type}`, event.data);
+  console.log(`[saga:${sagaId}] Received event: ${event.type}`, event.data);
 
   switch (event.type) {
     case PaymentEventType.PAYMENT_SUCCESS:
@@ -45,42 +46,55 @@ export const handlePaymentEvent = async (event: OrderUpdateEvent) => {
 
 const handlePaymentSuccess = async (event: PaymentSuccessEvent) => {
   const { orderId, amount, transactionId } = event.data;
-  console.log(`Payment successful for order ${orderId}: $${amount} (${transactionId})`);
+  const sagaId = event.correlationId;
+  console.log(
+    `[saga:${sagaId}] Payment successful for order ${orderId}: $${amount} (${transactionId})`,
+  );
 
   // Update order status to COMPLETED
   const updated = await updateOrderStatus(orderId, OrderStatus.COMPLETED);
 
   if (updated) {
-    console.log(`Order ${orderId} completed successfully!`);
+    console.log(`[saga:${sagaId}] Order ${orderId} completed successfully!`);
   } else {
-    console.error(`Failed to update order ${orderId} - order not found`);
+    console.error(`[saga:${sagaId}] Failed to update order ${orderId} - order not found`);
   }
 };
 
 const handlePaymentFailed = async (event: PaymentFailedEvent) => {
   const { orderId, reason } = event.data;
-  console.log(`Payment failed for order ${orderId}: ${reason}`);
+  const sagaId = event.correlationId;
+  console.log(`[saga:${sagaId}] Payment failed for order ${orderId}: ${reason}`);
 
   // Update order status to CANCELLED
-  const updated = await updateOrderStatus(orderId, OrderStatus.CANCELLED);
+  const updated = await updateOrderStatus(
+    orderId,
+    OrderStatus.CANCELLED,
+    `Payment failed: ${reason}`,
+  );
 
   if (updated) {
-    console.log(`Order ${orderId} cancelled due to payment failure`);
+    console.log(`[saga:${sagaId}] Order ${orderId} cancelled due to payment failure`);
   } else {
-    console.error(`Failed to cancel order ${orderId} - order not found`);
+    console.error(`[saga:${sagaId}] Failed to cancel order ${orderId} - order not found`);
   }
 };
 
 const handleInventoryFailed = async (event: InventoryFailedEvent) => {
   const { orderId, reason } = event.data;
-  console.log(`Inventory failed for order ${orderId}: ${reason}`);
+  const sagaId = event.correlationId;
+  console.log(`[saga:${sagaId}] Inventory failed for order ${orderId}: ${reason}`);
 
   // Update order status to CANCELLED - no payment was attempted
-  const updated = await updateOrderStatus(orderId, OrderStatus.CANCELLED);
+  const updated = await updateOrderStatus(
+    orderId,
+    OrderStatus.CANCELLED,
+    `Inventory failed: ${reason}`,
+  );
 
   if (updated) {
-    console.log(`Order ${orderId} cancelled due to inventory failure`);
+    console.log(`[saga:${sagaId}] Order ${orderId} cancelled due to inventory failure`);
   } else {
-    console.error(`Failed to cancel order ${orderId} - order not found`);
+    console.error(`[saga:${sagaId}] Failed to cancel order ${orderId} - order not found`);
   }
 };

@@ -25,12 +25,45 @@ export const initDatabase = async (): Promise<void> => {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS orders (
         id TEXT PRIMARY KEY,
+        saga_id TEXT NOT NULL,
         items JSONB NOT NULL,
         status TEXT NOT NULL,
+        error_message TEXT,
         created_at TIMESTAMP NOT NULL,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         version INTEGER NOT NULL DEFAULT 1
       )
+    `);
+
+    // Add saga_id column if it doesn't exist (migration)
+    await pool.query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'orders' AND column_name = 'saga_id'
+        ) THEN
+          ALTER TABLE orders ADD COLUMN saga_id TEXT;
+        END IF;
+      END $$;
+    `);
+
+    // Add error_message column if it doesn't exist (migration)
+    await pool.query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'orders' AND column_name = 'error_message'
+        ) THEN
+          ALTER TABLE orders ADD COLUMN error_message TEXT;
+        END IF;
+      END $$;
+    `);
+
+    // Create index on saga_id for efficient tracing
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_orders_saga_id ON orders(saga_id);
     `);
 
     // Create idempotency table for external event processing
