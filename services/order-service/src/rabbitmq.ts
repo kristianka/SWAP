@@ -1,5 +1,5 @@
 import amqplib from "amqplib";
-import { QUEUES } from "@swap/shared";
+import { assertAllQueues } from "@swap/shared";
 
 let channel: amqplib.Channel | null = null;
 
@@ -9,10 +9,10 @@ export const connectToRabbitMQ = async (): Promise<amqplib.Channel> => {
   const connection = await amqplib.connect(rabbitMqURL);
   channel = await connection.createChannel();
 
-  await channel.assertQueue(QUEUES.ORDER_EVENTS);
-  await channel.assertQueue(QUEUES.INVENTORY_EVENTS);
+  // Use centralized queue setup to ensure all queues exist with proper config
+  await assertAllQueues(channel);
 
-  console.log("✅ Connected to RabbitMQ");
+  console.log("Order Service connected to RabbitMQ");
 
   return channel;
 };

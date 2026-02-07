@@ -5,6 +5,7 @@ import { registerHealthRoutes } from "./routes/health";
 import { registerOrderRoutes } from "./routes/orders";
 import { startPaymentConsumer } from "./consumers/paymentConsumer";
 import { initDatabase } from "./db";
+import { startOrderTimeoutMonitor } from "./orderTimeout";
 
 const app = Fastify();
 
@@ -24,6 +25,10 @@ async function start() {
     // Start consuming events that affect order status
     // (PAYMENT_SUCCESS, PAYMENT_FAILED, INVENTORY_FAILED all come through PAYMENT_EVENTS)
     await startPaymentConsumer(channel);
+
+    // Start timeout monitor to cancel stuck orders
+    // could be a cron job in Docker, but for simplicity we run it here
+    startOrderTimeoutMonitor();
 
     // Register routes
     await registerHealthRoutes(app);
