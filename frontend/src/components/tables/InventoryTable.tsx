@@ -12,14 +12,22 @@ import {
 
 interface InventoryTable {
   inventory: InventoryItem[];
+  lastRefreshed: Date | null;
 }
 
-export const InventoryTable = ({ inventory }: InventoryTable) => {
+export const InventoryTable = ({ inventory, lastRefreshed }: InventoryTable) => {
   return (
     <Card>
       <CardContent>
         <Table>
-          <TableCaption>Inventory database</TableCaption>
+          <TableCaption>
+            Inventory database
+            {lastRefreshed && (
+              <span className="text-xs text-gray-500 ml-2">
+                (Last updated: {lastRefreshed.toLocaleTimeString()})
+              </span>
+            )}
+          </TableCaption>
           <TableHeader>
             <TableRow>
               <TableHead>ID</TableHead>

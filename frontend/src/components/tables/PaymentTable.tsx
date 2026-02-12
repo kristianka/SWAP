@@ -12,14 +12,22 @@ import {
 
 interface PaymentTableProps {
   payments: Payment[];
+  lastRefreshed: Date | null;
 }
 
-export const PaymentTable = ({ payments }: PaymentTableProps) => {
+export const PaymentTable = ({ payments, lastRefreshed }: PaymentTableProps) => {
   return (
     <Card>
       <CardContent>
         <Table>
-          <TableCaption>Payments database</TableCaption>
+          <TableCaption>
+            Payments database
+            {lastRefreshed && (
+              <span className="text-xs text-gray-500 ml-2">
+                (Last updated: {lastRefreshed.toLocaleTimeString()})
+              </span>
+            )}
+          </TableCaption>
           <TableHeader>
             <TableRow>
               <TableHead className="w-[200px]">ID</TableHead>

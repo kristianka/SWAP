@@ -17,16 +17,24 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 
 interface OrderTableProps {
   orders: Order[];
+  lastRefreshed: Date | null;
 }
 
-export const OrderTable = ({ orders }: OrderTableProps) => {
+export const OrderTable = ({ orders, lastRefreshed }: OrderTableProps) => {
   const [openErrorPopover, setOpenErrorPopover] = useState<string | null>(null);
 
   return (
     <Card>
       <CardContent>
         <Table>
-          <TableCaption>Orders database</TableCaption>
+          <TableCaption>
+            Orders database
+            {lastRefreshed && (
+              <span className="text-xs text-gray-500 ml-2">
+                (Last updated: {lastRefreshed.toLocaleTimeString()})
+              </span>
+            )}
+          </TableCaption>
           <TableHeader>
             <TableRow>
               <TableHead className="w-[200px]">ID</TableHead>
