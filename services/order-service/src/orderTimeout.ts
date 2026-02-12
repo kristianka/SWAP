@@ -1,5 +1,7 @@
 import { pool } from "./db";
-import { OrderStatus } from "@swap/shared";
+import { OrderStatus, OrderEventType, QUEUES } from "@swap/shared";
+import type { OrderEvent } from "@swap/shared";
+import { getChannel } from "./rabbitmq";
 
 /**
  * Order timeout configuration
@@ -31,7 +33,7 @@ export const startOrderTimeoutMonitor = () => {
             AND
                 created_at < $4
             RETURNING 
-                id
+                id, saga_id, items, created_at
         `,
         [
           OrderStatus.CANCELLED,
@@ -46,6 +48,28 @@ export const startOrderTimeoutMonitor = () => {
           `Timeout monitor: Cancelled ${result.rowCount} stuck order(s)`,
           result.rows.map((r) => r.id),
         );
+
+        // Publish ORDER_CANCELLED events to trigger saga compensation
+        const channel = getChannel();
+        for (const row of result.rows) {
+          const cancelEvent: OrderEvent = {
+            type: OrderEventType.ORDER_CANCELLED,
+            correlationId: row.saga_id || row.id, // Use saga_id if available
+            timestamp: new Date().toISOString(),
+            data: {
+              id: row.id,
+              sagaId: row.saga_id || row.id,
+              items: row.items || [],
+              status: OrderStatus.CANCELLED,
+              createdAt: row.created_at,
+              errorMessage:
+                "Order timeout: No response from inventory/payment services within expected time",
+            },
+          };
+
+          channel.sendToQueue(QUEUES.ORDER_EVENTS, Buffer.from(JSON.stringify(cancelEvent)));
+          console.log(`[timeout] Published ORDER_CANCELLED for order ${row.id}`);
+        }
       }
     } catch (error) {
       console.error("Error in order timeout monitor:", error);

@@ -20,6 +20,9 @@ export const handleOrderEvent = async (
     case OrderEventType.ORDER_CREATED:
       await handleOrderCreated(event);
       break;
+    case OrderEventType.ORDER_CANCELLED:
+      await handleOrderCancelled(event);
+      break;
     case PaymentEventType.PAYMENT_FAILED:
       await handlePaymentFailed(event);
       break;
@@ -101,6 +104,35 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
   console.log(
     `[saga:${sagaId}] Published ${InventoryEventType.INVENTORY_RESERVED} for order ${orderId}`,
   );
+
+  await markProcessed(idempotencyKey);
+  return true;
+};
+
+const handleOrderCancelled = async (event: OrderCreatedEvent) => {
+  const orderId = event.data.id;
+  const sagaId = event.correlationId;
+  const idempotencyKey = `inventory:release:${orderId}`;
+  const processed = await hasProcessed(idempotencyKey);
+
+  // Idempotency check: skip if already processed
+  if (processed) {
+    console.log(`[saga:${sagaId}] Skipping duplicate ORDER_CANCELLED for order ${orderId}`);
+    return true;
+  }
+
+  console.log(
+    `[saga:${sagaId}] Releasing inventory for order ${orderId} (order cancelled: ${event.data.errorMessage || "unknown reason"})`,
+  );
+
+  // Compensating transaction: release the reserved inventory
+  const released = await releaseItems(orderId);
+
+  if (released) {
+    console.log(`[saga:${sagaId}] Inventory released for order ${orderId}`);
+  } else {
+    console.log(`[saga:${sagaId}] No reservation found to release for order ${orderId}`);
+  }
 
   await markProcessed(idempotencyKey);
   return true;
