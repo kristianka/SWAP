@@ -23,6 +23,9 @@ interface OrderTableProps {
 export const OrderTable = ({ orders, lastRefreshed }: OrderTableProps) => {
   const [openErrorPopover, setOpenErrorPopover] = useState<string | null>(null);
 
+  // only first three
+  const displayedOrders = orders.slice(0, 3);
+
   return (
     <Card>
       <CardContent>
@@ -45,14 +48,14 @@ export const OrderTable = ({ orders, lastRefreshed }: OrderTableProps) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {orders.length === 0 ? (
+            {displayedOrders.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center">
                   No orders found
                 </TableCell>
               </TableRow>
             ) : (
-              orders.map((order) => (
+              displayedOrders.map((order) => (
                 <TableRow key={order.id}>
                   <TableCell className="font-mono text-xs">{order.id}</TableCell>
                   <TableCell>
