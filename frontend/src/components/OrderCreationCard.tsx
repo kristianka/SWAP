@@ -4,14 +4,7 @@ import { Card } from "./ui/card";
 import { Input } from "./ui/input";
 import { ShoppingCart, Plus, Minus, Trash2 } from "lucide-react";
 import { Spinner } from "./ui/spinner";
-
-interface InventoryItem {
-  id: string;
-  name: string;
-  stock_level: number;
-  reserved: number;
-  available: number;
-}
+import { api, type InventoryItem } from "../lib/api";
 
 interface SelectedItem {
   product: string;
@@ -22,29 +15,35 @@ interface SelectedItem {
 
 interface OrderCreationCardProps {
   onOrderCreated: () => void;
+  onSuccess: (message: string) => void;
 }
 
-export const OrderCreationCard = ({ onOrderCreated }: OrderCreationCardProps) => {
+export const OrderCreationCard = ({ onOrderCreated, onSuccess }: OrderCreationCardProps) => {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-
-  useEffect(() => {
-    fetchInventory();
-  }, []);
 
   const fetchInventory = async () => {
-    try {
-      const res = await fetch("http://localhost:3002/inventory");
-      if (res.ok) {
-        setInventory(await res.json());
-      }
-    } catch (error) {
-      console.error("Failed to fetch inventory:", error);
+    const response = await api.fetchInventory();
+    if (response.error) {
+      console.error("Failed to fetch inventory:", response.error);
+    } else {
+      setInventory(response.data);
     }
   };
+
+  useEffect(() => {
+    // Fetch inventory on mount
+    (async () => {
+      const response = await api.fetchInventory();
+      if (response.error) {
+        console.error("Failed to fetch inventory:", response.error);
+      } else {
+        setInventory(response.data);
+      }
+    })();
+  }, []);
 
   const getItemQuantity = (itemId: string) => {
     return selectedItems.find((i) => i.product === itemId)?.quantity || 0;
@@ -88,38 +87,24 @@ export const OrderCreationCard = ({ onOrderCreated }: OrderCreationCardProps) =>
 
     setLoading(true);
     setError(null);
-    setSuccess(false);
 
-    const orderPayload = {
-      items: selectedItems.map(({ product, quantity }) => ({
-        product,
-        quantity,
-      })),
-    };
+    const items = selectedItems.map(({ product, quantity }) => ({
+      product,
+      quantity,
+    }));
 
-    try {
-      const response = await fetch("http://localhost:3001/orders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(orderPayload),
-      });
+    const response = await api.createOrder(items);
 
-      if (!response.ok) {
-        throw new Error(`Failed to create order: ${response.statusText}`);
-      }
-
-      setSuccess(true);
+    if (response.error) {
+      setError(response.error);
+    } else {
+      onSuccess("Order created successfully! Watch the tables update.");
       setSelectedItems([]);
-      setTimeout(() => setSuccess(false), 3000);
       onOrderCreated();
       fetchInventory(); // Refresh inventory to show updated available counts
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
-      setLoading(false);
     }
+
+    setLoading(false);
   };
 
   return (
@@ -205,15 +190,10 @@ export const OrderCreationCard = ({ onOrderCreated }: OrderCreationCardProps) =>
           </div>
         </div>
 
-        {/* Error/Success Messages */}
+        {/* Error Message */}
         {error && (
           <div className="p-3 rounded-lg bg-red-500/10 border border-red-500 text-red-500 text-sm">
             {error}
-          </div>
-        )}
-        {success && (
-          <div className="p-3 rounded-lg bg-green-500/10 border border-green-500 text-green-500 text-sm">
-            Order created successfully! Watch the tables update.
           </div>
         )}
 
