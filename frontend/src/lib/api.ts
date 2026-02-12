@@ -28,47 +28,88 @@ const API_BASE_URLS = {
   payments: "http://localhost:3003",
 } as const;
 
+export interface ApiResponse<T> {
+  data: T;
+  error: string | null;
+}
+
 export const api = {
-  async fetchOrders(): Promise<Order[]> {
+  async fetchOrders(): Promise<ApiResponse<Order[]>> {
     try {
       const res = await fetch(`${API_BASE_URLS.orders}/orders`);
       if (res.ok) {
-        return await res.json();
+        return { data: await res.json(), error: null };
       }
-      throw new Error(`Failed to fetch orders: ${res.statusText}`);
+      return { data: [], error: `Failed to fetch orders: ${res.statusText}` };
     } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to fetch orders";
       console.error("Failed to fetch orders:", error);
-      return [];
+      return { data: [], error: message };
     }
   },
 
-  async fetchInventory(): Promise<InventoryItem[]> {
+  async fetchInventory(): Promise<ApiResponse<InventoryItem[]>> {
     try {
       const res = await fetch(`${API_BASE_URLS.inventory}/inventory`);
       if (res.ok) {
-        return await res.json();
+        return { data: await res.json(), error: null };
       }
-      throw new Error(`Failed to fetch inventory: ${res.statusText}`);
+      return { data: [], error: `Failed to fetch inventory: ${res.statusText}` };
     } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to fetch inventory";
       console.error("Failed to fetch inventory:", error);
-      return [];
+      return { data: [], error: message };
     }
   },
 
-  async fetchPayments(): Promise<Payment[]> {
+  async fetchPayments(): Promise<ApiResponse<Payment[]>> {
     try {
       const res = await fetch(`${API_BASE_URLS.payments}/payments`);
       if (res.ok) {
-        return await res.json();
+        return { data: await res.json(), error: null };
       }
-      throw new Error(`Failed to fetch payments: ${res.statusText}`);
+      return { data: [], error: `Failed to fetch payments: ${res.statusText}` };
     } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to fetch payments";
       console.error("Failed to fetch payments:", error);
-      return [];
+      return { data: [], error: message };
     }
   },
 
   async fetchAllData() {
     return Promise.all([this.fetchOrders(), this.fetchInventory(), this.fetchPayments()]);
+  },
+
+  async createOrder(items: { product: string; quantity: number }[]): Promise<ApiResponse<Order>> {
+    try {
+      const response = await fetch(`${API_BASE_URLS.orders}/orders`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ items }),
+      });
+
+      if (response.ok) {
+        return { data: await response.json(), error: null };
+      }
+
+      // Try to get error details from response body
+      let errorMessage = `Failed to create order: ${response.statusText}`;
+      try {
+        const errorBody = await response.json();
+        if (errorBody.error || errorBody.message) {
+          errorMessage = errorBody.error || errorBody.message;
+        }
+      } catch {
+        // Ignore JSON parse errors
+      }
+
+      return { data: {} as Order, error: errorMessage };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to create order";
+      console.error("Failed to create order:", error);
+      return { data: {} as Order, error: message };
+    }
   },
 };
