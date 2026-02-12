@@ -67,6 +67,14 @@ export interface InventoryReleasedEvent extends BaseEvent {
   };
 }
 
+export interface InventoryItem {
+  id: string;
+  name: string;
+  stock_level: number;
+  reserved: number;
+  available: number;
+}
+
 export type InventoryEvent = InventoryReservedEvent | InventoryFailedEvent | InventoryReleasedEvent;
 
 // Payment Service events
@@ -85,6 +93,13 @@ export interface PaymentFailedEvent extends BaseEvent {
     orderId: string;
     reason: string;
   };
+}
+
+export interface Payment {
+  id: string;
+  order_id: string;
+  amount: number;
+  status: string;
 }
 
 export type PaymentEvent = PaymentSuccessEvent | PaymentFailedEvent;
