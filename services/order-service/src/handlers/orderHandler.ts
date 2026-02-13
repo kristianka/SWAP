@@ -1,6 +1,12 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
 import type { OrderItem, Order, OrderEvent } from "@swap/shared";
-import { OrderStatus, OrderEventType, QUEUES } from "@swap/shared";
+import {
+  OrderStatus,
+  OrderEventType,
+  EXCHANGES,
+  ROUTING_KEYS,
+  publishToExchange,
+} from "@swap/shared";
 import { addOrder } from "../storage/orderStorage";
 import { getChannel } from "../rabbitmq";
 
@@ -54,7 +60,7 @@ export const createOrderHandler = async (
   };
 
   const channel = getChannel();
-  channel.sendToQueue(QUEUES.ORDER_EVENTS, Buffer.from(JSON.stringify(event)));
+  publishToExchange(channel, EXCHANGES.ORDER_EXCHANGE, ROUTING_KEYS.ORDER_CREATED, event);
 
   console.log(`[saga:${sagaId}] Published ${OrderEventType.ORDER_CREATED} for order ${order.id}`);
 

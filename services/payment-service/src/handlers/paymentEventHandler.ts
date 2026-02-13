@@ -1,5 +1,12 @@
 import type { InventoryReservedEvent, PaymentSuccessEvent, PaymentFailedEvent } from "@swap/shared";
-import { PaymentEventType, PaymentStatus, QUEUES, shouldFailForBehaviour } from "@swap/shared";
+import {
+  PaymentEventType,
+  PaymentStatus,
+  EXCHANGES,
+  ROUTING_KEYS,
+  shouldFailForBehaviour,
+  publishToExchange,
+} from "@swap/shared";
 import { getChannel } from "../rabbitmq";
 import { hasProcessed, markProcessed } from "../storage/idempotencyStorage";
 import { addPayment, updatePaymentStatus } from "../storage/paymentStorage";
@@ -63,11 +70,12 @@ export const handleInventoryReserved = async (event: InventoryReservedEvent) => 
       },
     };
 
-    // Publish to order service (for order completion)
-    channel.sendToQueue(QUEUES.PAYMENT_EVENTS, Buffer.from(JSON.stringify(paymentEvent)));
-
-    // Publish to inventory service (for reservation confirmation) - separate queue to avoid competing consumers
-    channel.sendToQueue(QUEUES.ORDER_EVENTS, Buffer.from(JSON.stringify(paymentEvent)));
+    publishToExchange(
+      channel,
+      EXCHANGES.PAYMENT_EXCHANGE,
+      ROUTING_KEYS.PAYMENT_SUCCESS,
+      paymentEvent,
+    );
 
     console.log(
       `[saga:${sagaId}] Published ${PaymentEventType.PAYMENT_SUCCESS} for order ${orderId}`,
@@ -95,11 +103,14 @@ export const handleInventoryReserved = async (event: InventoryReservedEvent) => 
 
     const channel = getChannel();
 
-    // Publish to order service (for order cancellation)
-    channel.sendToQueue(QUEUES.PAYMENT_EVENTS, Buffer.from(JSON.stringify(paymentFailedEvent)));
-
-    // Publish to inventory service (for reservation release) - separate queue to avoid competing consumers
-    channel.sendToQueue(QUEUES.ORDER_EVENTS, Buffer.from(JSON.stringify(paymentFailedEvent)));
+    // Publish to payment exchange - both Order and Inventory services will receive it
+    // This is the choreography pattern: publish once, consumers subscribe independently
+    publishToExchange(
+      channel,
+      EXCHANGES.PAYMENT_EXCHANGE,
+      ROUTING_KEYS.PAYMENT_FAILED,
+      paymentFailedEvent,
+    );
 
     console.log(
       `[saga:${sagaId}] Published ${PaymentEventType.PAYMENT_FAILED} for order ${orderId}`,

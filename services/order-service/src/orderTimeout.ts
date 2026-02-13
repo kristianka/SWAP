@@ -1,5 +1,11 @@
 import { pool } from "./db";
-import { OrderStatus, OrderEventType, QUEUES } from "@swap/shared";
+import {
+  OrderStatus,
+  OrderEventType,
+  EXCHANGES,
+  ROUTING_KEYS,
+  publishToExchange,
+} from "@swap/shared";
 import type { OrderEvent } from "@swap/shared";
 import { getChannel } from "./rabbitmq";
 
@@ -69,7 +75,12 @@ export const startOrderTimeoutMonitor = () => {
             },
           };
 
-          channel.sendToQueue(QUEUES.ORDER_EVENTS, Buffer.from(JSON.stringify(cancelEvent)));
+          publishToExchange(
+            channel,
+            EXCHANGES.ORDER_EXCHANGE,
+            ROUTING_KEYS.ORDER_CANCELLED,
+            cancelEvent,
+          );
           console.log(`[timeout] Published ORDER_CANCELLED for order ${row.id}`);
         }
       }
