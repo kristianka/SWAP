@@ -99,7 +99,7 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
     data: {
       orderId,
       items,
-      failTransaction: event.data.failTransaction,
+      paymentBehaviour: event.data.paymentBehaviour,
     },
   };
 

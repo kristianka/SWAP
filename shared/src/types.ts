@@ -22,7 +22,7 @@ export interface Order {
   status: OrderStatus;
   createdAt: string;
   errorMessage?: string; // Error message when order fails
-  failTransaction?: boolean; // For testing failure scenarios
+  paymentBehaviour?: "success" | "failure" | "random"; // For testing failure scenarios
 }
 
 // ===========================================
@@ -50,7 +50,7 @@ export interface InventoryReservedEvent extends BaseEvent {
   data: {
     orderId: string;
     items: OrderItem[];
-    failTransaction?: boolean;
+    paymentBehaviour?: "success" | "failure" | "random";
   };
 }
 

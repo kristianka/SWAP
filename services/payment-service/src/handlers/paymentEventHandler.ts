@@ -5,7 +5,7 @@ import { hasProcessed, markProcessed } from "../storage/idempotencyStorage";
 import { addPayment, updatePaymentStatus } from "../storage/paymentStorage";
 
 export const handleInventoryReserved = async (event: InventoryReservedEvent) => {
-  const { orderId, items, failTransaction } = event.data;
+  const { orderId, items, paymentBehaviour } = event.data;
   const sagaId = event.correlationId;
   const sessionId = event.sessionId;
   const idempotencyKey = `payment:${orderId}`;
@@ -36,9 +36,18 @@ export const handleInventoryReserved = async (event: InventoryReservedEvent) => 
   await new Promise((resolve) => setTimeout(resolve, 5000));
 
   try {
-    // Check if we should intentionally fail for testing
-    if (failTransaction) {
-      throw new Error("Transaction intentionally failed for testing purposes");
+    // Determine if we should fail based on payment behaviour
+    let shouldFail = false;
+    if (paymentBehaviour === "failure") {
+      shouldFail = true;
+    } else if (paymentBehaviour === "random") {
+      shouldFail = Math.random() < 0.5; // 50% chance to fail
+    }
+
+    if (shouldFail) {
+      throw new Error(
+        "Transaction intentionally failed for testing purposes. Inventory released, order cancelled.",
+      );
     }
 
     const channel = getChannel();
