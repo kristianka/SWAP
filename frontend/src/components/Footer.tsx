@@ -1,3 +1,5 @@
+import { ArrowUpRight } from "lucide-react";
+
 export const Footer = () => {
   // icons by claude
   return (
@@ -33,8 +35,15 @@ export const Footer = () => {
               </svg>
             </a>
           </div>
-
-          <p className="text-sm text-gray-400">Kristian Kähkönen</p>
+          <a
+            className="text-sm text-gray-400 hover:text-gray-300 inline-flex items-center gap-1"
+            href="https://kristiankahkonen.com?utm_source=swap_demo"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            kristiankahkonen.com
+            <ArrowUpRight className="size-3" />
+          </a>
         </div>
       </div>
     </footer>
