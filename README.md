@@ -10,7 +10,7 @@ Event-driven microservices architecture using **RabbitMQ** as the message broker
 
 - **Order Service** - Orchestrates order lifecycle and maintains order state
 - **Inventory Service** - Manages inventory reservations and releases
-- **Payment Service** - Processes payments and handles transactions
+- **Payment Service** - Processes payments and persists transaction records
 
 ### RabbitMQ Queues
 
@@ -81,7 +81,7 @@ Happy path (=successful) path is the scenario when everything goes fine: user cr
 
 #### Payment Failure (with compensating transaction)
 
-To test the payment failure flow, pass `failTransaction: true` in the order creation request:
+To test payment behavior, pass `paymentBehaviour` in the order creation request:
 
 ```json
 {
@@ -91,11 +91,16 @@ To test the payment failure flow, pass `failTransaction: true` in the order crea
       "quantity": 1
     }
   ],
-  "failTransaction": true
+  "paymentBehaviour": "failure"
 }
 ```
 
-When this flag is set:
+**Payment Behaviour Options:**
+- `"success"` - Payment succeeds (default if omitted)
+- `"failure"` - Payment intentionally fails for testing
+- `"random"` - 50% chance to succeed or fail
+
+When payment fails:
 
 1. Order is created normally in PENDING status
 2. Inventory is reserved successfully
@@ -138,6 +143,47 @@ curl -X POST http://localhost:3002/inventory/seed
 ## Running
 
 See individual service folders for instructions.
+
+## Session Isolation
+
+We use **session-based data isolation** to support multiple concurrent users in public demos without data conflicts.
+
+### How It Works
+
+- Each user gets a unique session ID (UUID) stored in browser localStorage
+- All database tables include a `session_id` column with composite primary keys
+- All API requests include `x-session-id` header
+- Session ID flows through the entire saga workflow via events
+- Users only see their own orders, inventory, and payments
+
+### Frontend Features
+
+**Session Display & Regeneration:**
+
+- Session ID displayed below the order table
+- Click the refresh button (🔄) to generate a new session
+- New session starts with empty data - requires seeding inventory
+
+**Seed Inventory:**
+
+- "Seed Inventory" button populates products for your session
+- Creates default products: Gaming Laptop (5), Wireless Mouse (67), Mechanical Keyboard (21), 4K Monitor (15)
+- Each session maintains independent inventory levels
+
+### Implementation Details
+
+**Database Schema:**
+
+- Composite primary keys: `(id, session_id)` on products, orders, payments, reservations
+- Indexed on `session_id` for query performance
+- Migration-safe: existing data gets `session_id = 'default'`
+
+**Backend Changes:**
+
+- All storage functions accept `sessionId` parameter
+- All queries filter by `session_id`
+- Event handlers extract and propagate `sessionId`
+- API routes validate `x-session-id` header presence
 
 ## Notes
 

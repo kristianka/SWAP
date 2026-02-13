@@ -3,6 +3,7 @@ import type { Order } from "@swap/shared/types";
 import { describe, test, expect, beforeAll } from "bun:test";
 import {
   ORDER_SERVICE_URL,
+  TEST_SESSION_ID,
   checkServicesHealth,
   resetAllServices,
   waitForOrderStatus,
@@ -17,16 +18,19 @@ describe("Microservices Integration Tests - Failure Scenarios", () => {
 
   describe("Failure Path", () => {
     test("should cancel order when payment fails", async () => {
-      // Create order with failTransaction flag
+      // Create order with paymentBehaviour set to failure
       const createResponse = await fetch(`${ORDER_SERVICE_URL}/orders`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-session-id": TEST_SESSION_ID,
+        },
         body: JSON.stringify({
           items: [
             { product: "laptop", quantity: 1 },
             { product: "mouse", quantity: 2 },
           ],
-          failTransaction: true,
+          paymentBehaviour: "failure",
         }),
       });
 
@@ -43,7 +47,9 @@ describe("Microservices Integration Tests - Failure Scenarios", () => {
       expect(finalStatus).toBe(OrderStatus.CANCELLED);
 
       // Verify final order state
-      const finalResponse = await fetch(`${ORDER_SERVICE_URL}/orders/${order.id}`);
+      const finalResponse = await fetch(`${ORDER_SERVICE_URL}/orders/${order.id}`, {
+        headers: { "x-session-id": TEST_SESSION_ID },
+      });
       const finalOrder = (await finalResponse.json()) as Order;
 
       expect(finalOrder.status).toBe(OrderStatus.CANCELLED);
@@ -53,10 +59,13 @@ describe("Microservices Integration Tests - Failure Scenarios", () => {
     test("should handle payment failure with single item", async () => {
       const createResponse = await fetch(`${ORDER_SERVICE_URL}/orders`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-session-id": TEST_SESSION_ID,
+        },
         body: JSON.stringify({
           items: [{ product: "keyboard", quantity: 1 }],
-          failTransaction: true,
+          paymentBehaviour: "failure",
         }),
       });
 
@@ -75,18 +84,24 @@ describe("Microservices Integration Tests - Failure Scenarios", () => {
       const [order1Response, order2Response] = await Promise.all([
         fetch(`${ORDER_SERVICE_URL}/orders`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "x-session-id": TEST_SESSION_ID,
+          },
           body: JSON.stringify({
             items: [{ product: "monitor", quantity: 1 }],
-            failTransaction: true,
+            paymentBehaviour: "failure",
           }),
         }),
         fetch(`${ORDER_SERVICE_URL}/orders`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "x-session-id": TEST_SESSION_ID,
+          },
           body: JSON.stringify({
             items: [{ product: "keyboard", quantity: 2 }],
-            failTransaction: true,
+            paymentBehaviour: "failure",
           }),
         }),
       ]);
@@ -112,10 +127,13 @@ describe("Microservices Integration Tests - Failure Scenarios", () => {
     test("should transition from PENDING to CANCELLED on payment failure", async () => {
       const createResponse = await fetch(`${ORDER_SERVICE_URL}/orders`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-session-id": TEST_SESSION_ID,
+        },
         body: JSON.stringify({
           items: [{ product: "test-failure-flow", quantity: 1 }],
-          failTransaction: true,
+          paymentBehaviour: "failure",
         }),
       });
 
@@ -129,7 +147,9 @@ describe("Microservices Integration Tests - Failure Scenarios", () => {
       expect(finalStatus).toBe(OrderStatus.CANCELLED);
 
       // Verify order went directly from PENDING to CANCELLED
-      const finalResponse = await fetch(`${ORDER_SERVICE_URL}/orders/${orderId}`);
+      const finalResponse = await fetch(`${ORDER_SERVICE_URL}/orders/${orderId}`, {
+        headers: { "x-session-id": TEST_SESSION_ID },
+      });
       const finalOrder = (await finalResponse.json()) as Order;
       expect(finalOrder.status).toBe(OrderStatus.CANCELLED);
     }, 20000);
@@ -137,13 +157,16 @@ describe("Microservices Integration Tests - Failure Scenarios", () => {
     test("should handle large quantity order failure", async () => {
       const createResponse = await fetch(`${ORDER_SERVICE_URL}/orders`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-session-id": TEST_SESSION_ID,
+        },
         body: JSON.stringify({
           items: [
             { product: "expensive-item", quantity: 100 },
             { product: "another-item", quantity: 50 },
           ],
-          failTransaction: true,
+          paymentBehaviour: "failure",
         }),
       });
 
@@ -163,7 +186,10 @@ describe("Microservices Integration Tests - Failure Scenarios", () => {
       // First, create a successful order
       const successResponse = await fetch(`${ORDER_SERVICE_URL}/orders`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-session-id": TEST_SESSION_ID,
+        },
         body: JSON.stringify({
           items: [{ product: "mouse", quantity: 1 }],
         }),
@@ -178,10 +204,13 @@ describe("Microservices Integration Tests - Failure Scenarios", () => {
       // Now create a failed order
       const failResponse = await fetch(`${ORDER_SERVICE_URL}/orders`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-session-id": TEST_SESSION_ID,
+        },
         body: JSON.stringify({
           items: [{ product: "fail-item", quantity: 1 }],
-          failTransaction: true,
+          paymentBehaviour: "failure",
         }),
       });
 

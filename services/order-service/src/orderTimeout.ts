@@ -33,7 +33,7 @@ export const startOrderTimeoutMonitor = () => {
             AND
                 created_at < $4
             RETURNING 
-                id, saga_id, items, created_at
+                id, saga_id, session_id, items, created_at
         `,
         [
           OrderStatus.CANCELLED,
@@ -55,10 +55,12 @@ export const startOrderTimeoutMonitor = () => {
           const cancelEvent: OrderEvent = {
             type: OrderEventType.ORDER_CANCELLED,
             correlationId: row.saga_id || row.id, // Use saga_id if available
+            sessionId: row.session_id,
             timestamp: new Date().toISOString(),
             data: {
               id: row.id,
               sagaId: row.saga_id || row.id,
+              sessionId: row.session_id,
               items: row.items || [],
               status: OrderStatus.CANCELLED,
               createdAt: row.created_at,

@@ -5,7 +5,13 @@ import type {
   InventoryReservedEvent,
   InventoryFailedEvent,
 } from "@swap/shared";
-import { OrderEventType, PaymentEventType, InventoryEventType, QUEUES } from "@swap/shared";
+import {
+  OrderEventType,
+  PaymentEventType,
+  InventoryEventType,
+  QUEUES,
+  shouldFailForBehaviour,
+} from "@swap/shared";
 import { getChannel } from "../rabbitmq";
 import { hasProcessed, markProcessed } from "../storage/idempotencyStorage";
 import { reserveItems, releaseItems, confirmReservation } from "../storage/inventoryStorage";
@@ -37,8 +43,9 @@ export const handleOrderEvent = async (
 const handleOrderCreated = async (event: OrderCreatedEvent) => {
   const orderId = event.data.id;
   const sagaId = event.correlationId;
+  const sessionId = event.sessionId;
   const idempotencyKey = `inventory:reserve:${orderId}`;
-  const processed = await hasProcessed(idempotencyKey);
+  const processed = await hasProcessed(sessionId, idempotencyKey);
 
   // Idempotency check, skip if already processed
   if (processed) {
@@ -48,12 +55,42 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
 
   console.log(`[saga:${sagaId}] Checking inventory for order ${orderId}...`);
   const items = event.data.items;
+  const inventoryBehaviour = event.data.inventoryBehaviour;
 
   // Artificial delay to simulate processing (makes the saga observable)
-  await new Promise((resolve) => setTimeout(resolve, 1500));
+  await new Promise((resolve) => setTimeout(resolve, 3000));
+
+  // Determine if we should fail based on inventory behaviour
+  if (shouldFailForBehaviour(inventoryBehaviour)) {
+    // Simulate inventory failure
+    console.log(
+      `[saga:${sagaId}] Inventory reservation intentionally failed for order ${orderId} (behaviour: ${inventoryBehaviour})`,
+    );
+
+    const failedEvent: InventoryFailedEvent = {
+      type: InventoryEventType.INVENTORY_FAILED,
+      correlationId: sagaId,
+      sessionId,
+      timestamp: new Date().toISOString(),
+      data: {
+        orderId,
+        reason:
+          "Inventory reservation intentionally failed for testing purposes. No actual reservation was made, and no payment was processed.",
+      },
+    };
+
+    const channel = getChannel();
+    channel.sendToQueue(QUEUES.PAYMENT_EVENTS, Buffer.from(JSON.stringify(failedEvent)));
+    console.log(
+      `[saga:${sagaId}] Published ${InventoryEventType.INVENTORY_FAILED} for order ${orderId}`,
+    );
+
+    await markProcessed(sessionId, idempotencyKey);
+    return false;
+  }
 
   // Attempt to reserve inventory
-  const result = await reserveItems(orderId, items);
+  const result = await reserveItems(sessionId, orderId, items);
   const channel = getChannel();
 
   if (!result.success) {
@@ -67,6 +104,7 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
     const failedEvent: InventoryFailedEvent = {
       type: InventoryEventType.INVENTORY_FAILED,
       correlationId: sagaId,
+      sessionId,
       timestamp: new Date().toISOString(),
       data: {
         orderId,
@@ -82,7 +120,7 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
       `[saga:${sagaId}] Published ${InventoryEventType.INVENTORY_FAILED} for order ${orderId}`,
     );
 
-    await markProcessed(idempotencyKey);
+    await markProcessed(sessionId, idempotencyKey);
     return false;
   }
 
@@ -92,11 +130,13 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
   const reservedEvent: InventoryReservedEvent = {
     type: InventoryEventType.INVENTORY_RESERVED,
     correlationId: sagaId,
+    sessionId,
     timestamp: new Date().toISOString(),
     data: {
       orderId,
       items,
-      failTransaction: event.data.failTransaction,
+      paymentBehaviour: event.data.paymentBehaviour,
+      inventoryBehaviour: event.data.inventoryBehaviour,
     },
   };
 
@@ -105,15 +145,16 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
     `[saga:${sagaId}] Published ${InventoryEventType.INVENTORY_RESERVED} for order ${orderId}`,
   );
 
-  await markProcessed(idempotencyKey);
+  await markProcessed(sessionId, idempotencyKey);
   return true;
 };
 
 const handleOrderCancelled = async (event: OrderCreatedEvent) => {
   const orderId = event.data.id;
   const sagaId = event.correlationId;
+  const sessionId = event.sessionId;
   const idempotencyKey = `inventory:release:${orderId}`;
-  const processed = await hasProcessed(idempotencyKey);
+  const processed = await hasProcessed(sessionId, idempotencyKey);
 
   // Idempotency check: skip if already processed
   if (processed) {
@@ -126,7 +167,7 @@ const handleOrderCancelled = async (event: OrderCreatedEvent) => {
   );
 
   // Compensating transaction: release the reserved inventory
-  const released = await releaseItems(orderId);
+  const released = await releaseItems(sessionId, orderId);
 
   if (released) {
     console.log(`[saga:${sagaId}] Inventory released for order ${orderId}`);
@@ -134,15 +175,16 @@ const handleOrderCancelled = async (event: OrderCreatedEvent) => {
     console.log(`[saga:${sagaId}] No reservation found to release for order ${orderId}`);
   }
 
-  await markProcessed(idempotencyKey);
+  await markProcessed(sessionId, idempotencyKey);
   return true;
 };
 
 const handlePaymentFailed = async (event: PaymentFailedEvent) => {
   const orderId = event.data.orderId;
   const sagaId = event.correlationId;
+  const sessionId = event.sessionId;
   const idempotencyKey = `inventory:release:${orderId}`;
-  const processed = await hasProcessed(idempotencyKey);
+  const processed = await hasProcessed(sessionId, idempotencyKey);
 
   // Idempotency check: skip if already processed
   if (processed) {
@@ -155,7 +197,7 @@ const handlePaymentFailed = async (event: PaymentFailedEvent) => {
   );
 
   // Compensating transaction: release the reserved inventory
-  const released = await releaseItems(orderId);
+  const released = await releaseItems(sessionId, orderId);
 
   if (released) {
     console.log(`[saga:${sagaId}] Inventory released for order ${orderId}`);
@@ -163,15 +205,16 @@ const handlePaymentFailed = async (event: PaymentFailedEvent) => {
     console.log(`[saga:${sagaId}] No reservation found to release for order ${orderId}`);
   }
 
-  await markProcessed(idempotencyKey);
+  await markProcessed(sessionId, idempotencyKey);
   return true;
 };
 
 const handlePaymentSuccess = async (event: PaymentSuccessEvent) => {
   const orderId = event.data.orderId;
   const sagaId = event.correlationId;
+  const sessionId = event.sessionId;
   const idempotencyKey = `inventory:confirm:${orderId}`;
-  const processed = await hasProcessed(idempotencyKey);
+  const processed = await hasProcessed(sessionId, idempotencyKey);
 
   // Idempotency check: skip if already processed
   if (processed) {
@@ -182,7 +225,7 @@ const handlePaymentSuccess = async (event: PaymentSuccessEvent) => {
   console.log(`[saga:${sagaId}] Confirming inventory reservation for order ${orderId}`);
 
   // Confirm the reservation (deduct from actual stock)
-  const confirmed = await confirmReservation(orderId);
+  const confirmed = await confirmReservation(sessionId, orderId);
 
   if (confirmed) {
     console.log(`[saga:${sagaId}] Inventory confirmed for order ${orderId}`);
@@ -190,6 +233,6 @@ const handlePaymentSuccess = async (event: PaymentSuccessEvent) => {
     console.log(`[saga:${sagaId}] No reservation found to confirm for order ${orderId}`);
   }
 
-  await markProcessed(idempotencyKey);
+  await markProcessed(sessionId, idempotencyKey);
   return true;
 };

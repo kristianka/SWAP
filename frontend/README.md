@@ -1,73 +1,63 @@
-# React + TypeScript + Vite
+# SWAP Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + TypeScript + Vite frontend for the SWAP distributed order processing system.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Real-time Order Tracking**: View orders as they progress through the saga workflow
+- **Inventory Management**: Monitor stock levels, reservations, and availability
+- **Payment Monitoring**: Track payment status and transactions
+- **Session Isolation**: Each user gets an isolated data sandbox for demos
 
-## React Compiler
+## Session Management
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The frontend implements session-based isolation for multi-user demo environments:
 
-## Expanding the ESLint configuration
+### Session ID
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- Automatically generated UUID on first visit
+- Stored in browser localStorage (`swap-demo-session-id`)
+- Displayed in the header at the top-right of the page
+- Included in all API requests via `x-session-id` header
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Session Controls
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- **Regenerate Button**: Creates a new session ID
+  - Clears all previous data from view
+  - Provides fresh isolated environment
+  - Useful for starting new demos!
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Seed Inventory
+
+- **"Seed Inventory" button**: Populates initial product stock
+  - Gaming Laptop (5 units)
+  - Wireless Mouse (67 units)
+  - Mechanical Keyboard (21 units)
+  - 4K Monitor (15 units)
+- Must be clicked for each new session to have products available
+
+## API Communication
+
+All API calls automatically include the session ID header:
+
+```typescript
+headers: {
+  'x-session-id': getOrCreateSessionId(),
+  // other headers...
+}
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### API Endpoints
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- **Order Service** (port 3001): `/orders`
+- **Inventory Service** (port 3002): `/inventory`, `/inventory/seed`
+- **Payment Service** (port 3003): `/payments`
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Running
+
+```bash
+bun install
+bun run dev
 ```
+
+Ensure all backend services are running first (order-service, inventory-service, payment-service, RabbitMQ, PostgreSQL).

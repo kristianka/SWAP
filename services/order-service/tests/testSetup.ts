@@ -9,6 +9,9 @@ export const ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL || "http://localh
 export const INVENTORY_SERVICE_URL = process.env.INVENTORY_SERVICE_URL || "http://localhost:3002";
 export const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL || "http://localhost:3003";
 
+// Test session ID for isolating test data
+export const TEST_SESSION_ID = "test-session-12345";
+
 /**
  * Verify all services are running
  */
@@ -41,8 +44,14 @@ export const checkServicesHealth = async () => {
  */
 export const resetAllServices = async () => {
   // Reset in order: orders first, then inventory (to avoid FK issues if any)
-  await fetch(`${ORDER_SERVICE_URL}/orders/reset`, { method: "POST" });
-  await fetch(`${INVENTORY_SERVICE_URL}/inventory/reset`, { method: "POST" });
+  await fetch(`${ORDER_SERVICE_URL}/orders/reset`, {
+    method: "POST",
+    headers: { "x-session-id": TEST_SESSION_ID },
+  });
+  await fetch(`${INVENTORY_SERVICE_URL}/inventory/reset`, {
+    method: "POST",
+    headers: { "x-session-id": TEST_SESSION_ID },
+  });
 
   // Small delay to ensure queues are drained
   await new Promise((resolve) => setTimeout(resolve, 500));
@@ -52,7 +61,10 @@ export const resetAllServices = async () => {
  * Seed inventory with initial test data
  */
 export const seedInventory = async () => {
-  const response = await fetch(`${INVENTORY_SERVICE_URL}/inventory/seed`, { method: "POST" });
+  const response = await fetch(`${INVENTORY_SERVICE_URL}/inventory/seed`, {
+    method: "POST",
+    headers: { "x-session-id": TEST_SESSION_ID },
+  });
   return response.json();
 };
 
@@ -62,7 +74,9 @@ export const waitForOrderStatus = async (orderId: string, maxWaitMs: number = 10
   const pollInterval = 500;
 
   while (Date.now() - startTime < maxWaitMs) {
-    const response = await fetch(`${ORDER_SERVICE_URL}/orders/${orderId}`);
+    const response = await fetch(`${ORDER_SERVICE_URL}/orders/${orderId}`, {
+      headers: { "x-session-id": TEST_SESSION_ID },
+    });
     const order = (await response.json()) as Order;
 
     if ([OrderStatus.COMPLETED, OrderStatus.CANCELLED].includes(order.status)) {

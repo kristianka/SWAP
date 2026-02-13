@@ -1,13 +1,15 @@
 import type { InventoryReservedEvent, PaymentSuccessEvent, PaymentFailedEvent } from "@swap/shared";
-import { PaymentEventType, QUEUES } from "@swap/shared";
+import { PaymentEventType, PaymentStatus, QUEUES, shouldFailForBehaviour } from "@swap/shared";
 import { getChannel } from "../rabbitmq";
 import { hasProcessed, markProcessed } from "../storage/idempotencyStorage";
+import { addPayment, updatePaymentStatus } from "../storage/paymentStorage";
 
 export const handleInventoryReserved = async (event: InventoryReservedEvent) => {
-  const { orderId, items, failTransaction } = event.data;
+  const { orderId, items, paymentBehaviour } = event.data;
   const sagaId = event.correlationId;
+  const sessionId = event.sessionId;
   const idempotencyKey = `payment:${orderId}`;
-  const processed = await hasProcessed(idempotencyKey);
+  const processed = await hasProcessed(sessionId, idempotencyKey);
 
   // Idempotency check, prevent duplicate payment processing
   if (processed) {
@@ -17,19 +19,34 @@ export const handleInventoryReserved = async (event: InventoryReservedEvent) => 
 
   console.log(`[saga:${sagaId}] Processing payment for order ${orderId}...`);
 
-  // Simulate payment processing
-  await new Promise((resolve) => setTimeout(resolve, 3000));
+  // Calculate amount upfront for both success and failure cases
+  const amount = items.reduce((sum, item) => sum + item.quantity * 10, 0); // Mock price calculation
+
+  // Create payment record with PENDING status immediately for visual feedback
+  const transactionId = `txn_${Bun.randomUUIDv7()}`;
+  await addPayment(sessionId, {
+    id: transactionId,
+    order_id: orderId,
+    amount,
+    status: PaymentStatus.PENDING,
+  });
+  console.log(`[saga:${sagaId}] Payment created with PENDING status for order ${orderId}`);
+
+  // Simulate payment processing (increased for demo effect)
+  await new Promise((resolve) => setTimeout(resolve, 5000));
 
   try {
-    // Check if we should intentionally fail for testing
-    if (failTransaction) {
-      throw new Error("Transaction intentionally failed for testing purposes");
+    // Determine if we should fail based on payment behaviour
+    if (shouldFailForBehaviour(paymentBehaviour)) {
+      throw new Error(
+        "Transaction intentionally failed for testing purposes. Inventory released, order cancelled.",
+      );
     }
 
     const channel = getChannel();
     // no real payment logic, just mock success
-    const amount = items.reduce((sum, item) => sum + item.quantity * 10, 0); // Mock price calculation
-    const transactionId = `txn_${Bun.randomUUIDv7()}`;
+    // Update payment status to SUCCESS
+    await updatePaymentStatus(sessionId, transactionId, PaymentStatus.SUCCESS);
 
     console.log(`[saga:${sagaId}] Payment successful for order ${orderId}: $${amount}`);
 
@@ -37,6 +54,7 @@ export const handleInventoryReserved = async (event: InventoryReservedEvent) => 
     const paymentEvent: PaymentSuccessEvent = {
       type: PaymentEventType.PAYMENT_SUCCESS,
       correlationId: sagaId,
+      sessionId,
       timestamp: new Date().toISOString(),
       data: {
         orderId,
@@ -56,14 +74,18 @@ export const handleInventoryReserved = async (event: InventoryReservedEvent) => 
     );
 
     // Mark as processed after successful handling
-    await markProcessed(idempotencyKey);
+    await markProcessed(sessionId, idempotencyKey);
   } catch (error) {
     console.error(`[saga:${sagaId}] Payment failed for order ${orderId}!`, error);
+
+    // Update payment status to FAILED
+    await updatePaymentStatus(sessionId, transactionId, PaymentStatus.FAILED);
 
     // Publish PAYMENT_FAILED event
     const paymentFailedEvent: PaymentFailedEvent = {
       type: PaymentEventType.PAYMENT_FAILED,
       correlationId: sagaId,
+      sessionId,
       timestamp: new Date().toISOString(),
       data: {
         orderId,
@@ -84,6 +106,6 @@ export const handleInventoryReserved = async (event: InventoryReservedEvent) => 
     );
 
     // Mark as processed even on failure to prevent retry loops
-    await markProcessed(idempotencyKey);
+    await markProcessed(sessionId, idempotencyKey);
   }
 };

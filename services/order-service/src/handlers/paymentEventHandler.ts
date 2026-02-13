@@ -14,8 +14,9 @@ type OrderUpdateEvent = PaymentSuccessEvent | PaymentFailedEvent | InventoryFail
 export const handlePaymentEvent = async (event: OrderUpdateEvent) => {
   const orderId = event.data.orderId;
   const sagaId = event.correlationId;
+  const sessionId = event.sessionId;
   const idempotencyKey = `order-update:${orderId}:${event.type}`;
-  const processed = await hasProcessed(idempotencyKey);
+  const processed = await hasProcessed(sessionId, idempotencyKey);
 
   // Idempotency check - skip if already processed
   if (processed) {
@@ -41,18 +42,19 @@ export const handlePaymentEvent = async (event: OrderUpdateEvent) => {
   }
 
   // Mark as processed after successful handling
-  await markProcessed(idempotencyKey);
+  await markProcessed(sessionId, idempotencyKey);
 };
 
 const handlePaymentSuccess = async (event: PaymentSuccessEvent) => {
   const { orderId, amount, transactionId } = event.data;
   const sagaId = event.correlationId;
+  const sessionId = event.sessionId;
   console.log(
     `[saga:${sagaId}] Payment successful for order ${orderId}: $${amount} (${transactionId})`,
   );
 
   // Update order status to COMPLETED
-  const updated = await updateOrderStatus(orderId, OrderStatus.COMPLETED);
+  const updated = await updateOrderStatus(sessionId, orderId, OrderStatus.COMPLETED);
 
   if (updated) {
     console.log(`[saga:${sagaId}] Order ${orderId} completed successfully!`);
@@ -64,10 +66,12 @@ const handlePaymentSuccess = async (event: PaymentSuccessEvent) => {
 const handlePaymentFailed = async (event: PaymentFailedEvent) => {
   const { orderId, reason } = event.data;
   const sagaId = event.correlationId;
+  const sessionId = event.sessionId;
   console.log(`[saga:${sagaId}] Payment failed for order ${orderId}: ${reason}`);
 
   // Update order status to CANCELLED
   const updated = await updateOrderStatus(
+    sessionId,
     orderId,
     OrderStatus.CANCELLED,
     `Payment failed: ${reason}`,
@@ -83,10 +87,12 @@ const handlePaymentFailed = async (event: PaymentFailedEvent) => {
 const handleInventoryFailed = async (event: InventoryFailedEvent) => {
   const { orderId, reason } = event.data;
   const sagaId = event.correlationId;
+  const sessionId = event.sessionId;
   console.log(`[saga:${sagaId}] Inventory failed for order ${orderId}: ${reason}`);
 
   // Update order status to CANCELLED - no payment was attempted
   const updated = await updateOrderStatus(
+    sessionId,
     orderId,
     OrderStatus.CANCELLED,
     `Inventory failed: ${reason}`,

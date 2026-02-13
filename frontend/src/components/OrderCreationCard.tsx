@@ -4,7 +4,9 @@ import { Card } from "./ui/card";
 import { Input } from "./ui/input";
 import { ShoppingCart, Plus, Minus, Trash2 } from "lucide-react";
 import { Spinner } from "./ui/spinner";
+import { TooltipProvider } from "./ui/tooltip";
 import { api, type InventoryItem } from "../lib/api";
+import { BehaviourSelect } from "./BehaviourSelect";
 
 interface SelectedItem {
   product: string;
@@ -22,7 +24,14 @@ export const OrderCreationCard = ({ onOrderCreated, onSuccess }: OrderCreationCa
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [polling, setPolling] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [inventoryBehaviour, setInventoryBehaviour] = useState<"success" | "failure" | "random">(
+    "success",
+  );
+  const [paymentBehaviour, setPaymentBehaviour] = useState<"success" | "failure" | "random">(
+    "success",
+  );
 
   const fetchInventory = async () => {
     const response = await api.fetchInventory();
@@ -93,7 +102,7 @@ export const OrderCreationCard = ({ onOrderCreated, onSuccess }: OrderCreationCa
       quantity,
     }));
 
-    const response = await api.createOrder(items);
+    const response = await api.createOrder(items, paymentBehaviour, inventoryBehaviour);
 
     if (response.error) {
       setError(response.error);
@@ -102,6 +111,18 @@ export const OrderCreationCard = ({ onOrderCreated, onSuccess }: OrderCreationCa
       setSelectedItems([]);
       onOrderCreated();
       fetchInventory(); // Refresh inventory to show updated available counts
+
+      // Start polling every 500ms for 10 seconds
+      setPolling(true);
+      const intervalId = setInterval(() => {
+        onOrderCreated();
+      }, 500);
+
+      // Stop polling after 10 seconds
+      setTimeout(() => {
+        clearInterval(intervalId);
+        setPolling(false);
+      }, 10000);
     }
 
     setLoading(false);
@@ -190,6 +211,25 @@ export const OrderCreationCard = ({ onOrderCreated, onSuccess }: OrderCreationCa
           </div>
         </div>
 
+        <div className="border-t border-gray-700 pt-4">
+          <h3 className="text-sm font-semibold mb-3">Demo Options</h3>
+          <TooltipProvider>
+            <div className="space-y-3">
+              <BehaviourSelect
+                label="Inventory behaviour"
+                value={inventoryBehaviour}
+                onChange={setInventoryBehaviour}
+                tooltip="In real world, inventory may fail if stock is updated during processing"
+              />
+              <BehaviourSelect
+                label="Payment behaviour"
+                value={paymentBehaviour}
+                onChange={setPaymentBehaviour}
+                tooltip="In real world, payment may fail if credit card details are incorrect or insufficient funds"
+              />
+            </div>
+          </TooltipProvider>
+        </div>
         {/* Error Message */}
         {error && (
           <div className="p-3 rounded-lg bg-red-500/10 border border-red-500 text-red-500 text-sm">
@@ -202,7 +242,7 @@ export const OrderCreationCard = ({ onOrderCreated, onSuccess }: OrderCreationCa
           {selectedItems.length > 0 && (
             <Button
               onClick={() => setSelectedItems([])}
-              disabled={loading}
+              disabled={loading || polling}
               variant="outline"
               size="lg"
             >
@@ -212,7 +252,7 @@ export const OrderCreationCard = ({ onOrderCreated, onSuccess }: OrderCreationCa
           )}
           <Button
             onClick={createOrder}
-            disabled={loading || selectedItems.length === 0}
+            disabled={loading || polling || selectedItems.length === 0}
             className="flex-1"
             size="lg"
           >
@@ -220,6 +260,11 @@ export const OrderCreationCard = ({ onOrderCreated, onSuccess }: OrderCreationCa
               <>
                 <Spinner className="mr-2" />
                 Creating Order...
+              </>
+            ) : polling ? (
+              <>
+                <Spinner className="mr-2" />
+                Polling...
               </>
             ) : (
               <>

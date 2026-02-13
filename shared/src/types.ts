@@ -3,6 +3,8 @@ import type {
   OrderEventType,
   InventoryEventType,
   PaymentEventType,
+  PaymentStatus,
+  InventoryStatus,
 } from "./constants";
 
 // ===========================================
@@ -16,11 +18,13 @@ export interface OrderItem {
 export interface Order {
   id: string;
   sagaId: string; // Unique identifier for the entire saga/transaction
+  sessionId: string; // User session for demo isolation
   items: OrderItem[];
   status: OrderStatus;
   createdAt: string;
   errorMessage?: string; // Error message when order fails
-  failTransaction?: boolean; // For testing failure scenarios
+  paymentBehaviour?: "success" | "failure" | "random"; // For testing failure scenarios
+  inventoryBehaviour?: "success" | "failure" | "random"; // For testing failure scenarios
 }
 
 // ===========================================
@@ -30,6 +34,7 @@ export interface Order {
 // Base event interface with correlation ID for tracing
 export interface BaseEvent {
   correlationId: string; // Tracks the entire saga/transaction
+  sessionId: string; // User session for demo isolation
   timestamp: string;
 }
 
@@ -47,7 +52,8 @@ export interface InventoryReservedEvent extends BaseEvent {
   data: {
     orderId: string;
     items: OrderItem[];
-    failTransaction?: boolean;
+    paymentBehaviour?: "success" | "failure" | "random";
+    inventoryBehaviour?: "success" | "failure" | "random";
   };
 }
 
@@ -73,6 +79,7 @@ export interface InventoryItem {
   stock_level: number;
   reserved: number;
   available: number;
+  reservationStatus: InventoryStatus;
 }
 
 export type InventoryEvent = InventoryReservedEvent | InventoryFailedEvent | InventoryReleasedEvent;
@@ -99,7 +106,8 @@ export interface Payment {
   id: string;
   order_id: string;
   amount: number;
-  status: string;
+  status: PaymentStatus;
+  created_at: string;
 }
 
 export type PaymentEvent = PaymentSuccessEvent | PaymentFailedEvent;
