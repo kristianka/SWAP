@@ -5,7 +5,13 @@ import type {
   InventoryReservedEvent,
   InventoryFailedEvent,
 } from "@swap/shared";
-import { OrderEventType, PaymentEventType, InventoryEventType, QUEUES } from "@swap/shared";
+import {
+  OrderEventType,
+  PaymentEventType,
+  InventoryEventType,
+  QUEUES,
+  shouldFailForBehaviour,
+} from "@swap/shared";
 import { getChannel } from "../rabbitmq";
 import { hasProcessed, markProcessed } from "../storage/idempotencyStorage";
 import { reserveItems, releaseItems, confirmReservation } from "../storage/inventoryStorage";
@@ -49,9 +55,38 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
 
   console.log(`[saga:${sagaId}] Checking inventory for order ${orderId}...`);
   const items = event.data.items;
+  const inventoryBehaviour = event.data.inventoryBehaviour;
 
   // Artificial delay to simulate processing (makes the saga observable)
   await new Promise((resolve) => setTimeout(resolve, 3000));
+
+  // Determine if we should fail based on inventory behaviour
+  if (shouldFailForBehaviour(inventoryBehaviour)) {
+    // Simulate inventory failure
+    console.log(
+      `[saga:${sagaId}] Inventory reservation intentionally failed for order ${orderId} (behaviour: ${inventoryBehaviour})`,
+    );
+
+    const failedEvent: InventoryFailedEvent = {
+      type: InventoryEventType.INVENTORY_FAILED,
+      correlationId: sagaId,
+      sessionId,
+      timestamp: new Date().toISOString(),
+      data: {
+        orderId,
+        reason: "Inventory reservation intentionally failed for testing purposes.",
+      },
+    };
+
+    const channel = getChannel();
+    channel.sendToQueue(QUEUES.PAYMENT_EVENTS, Buffer.from(JSON.stringify(failedEvent)));
+    console.log(
+      `[saga:${sagaId}] Published ${InventoryEventType.INVENTORY_FAILED} for order ${orderId}`,
+    );
+
+    await markProcessed(idempotencyKey);
+    return false;
+  }
 
   // Attempt to reserve inventory
   const result = await reserveItems(sessionId, orderId, items);
@@ -100,6 +135,7 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
       orderId,
       items,
       paymentBehaviour: event.data.paymentBehaviour,
+      inventoryBehaviour: event.data.inventoryBehaviour,
     },
   };
 

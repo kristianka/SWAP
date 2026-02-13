@@ -41,6 +41,36 @@ export enum PaymentStatus {
   FAILED = "FAILED",
 }
 
+export enum InventoryStatus {
+  NO_RESERVATIONS = "NO_RESERVATIONS",
+  RESERVING = "RESERVING",
+  RESERVED = "RESERVED",
+}
+
+// ===========================================
+// Test Behaviour (for simulating failures)
+// ===========================================
+export enum TestBehaviour {
+  SUCCESS = "success",
+  FAILURE = "failure",
+  RANDOM = "random",
+}
+
+/**
+ * Determines if a test behaviour should result in failure
+ * @param behaviour The test behaviour to evaluate
+ * @returns true if the operation should fail, false otherwise
+ */
+export function shouldFailForBehaviour(behaviour?: TestBehaviour | string): boolean {
+  if (behaviour === TestBehaviour.FAILURE || behaviour === "failure") {
+    return true;
+  }
+  if (behaviour === TestBehaviour.RANDOM || behaviour === "random") {
+    return Math.random() < 0.5; // 50% chance to fail
+  }
+  return false;
+}
+
 // ===========================================
 // Queue Names (message broker routing)
 // ===========================================

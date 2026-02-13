@@ -4,6 +4,7 @@ import type {
   InventoryEventType,
   PaymentEventType,
   PaymentStatus,
+  InventoryStatus,
 } from "./constants";
 
 // ===========================================
@@ -23,6 +24,7 @@ export interface Order {
   createdAt: string;
   errorMessage?: string; // Error message when order fails
   paymentBehaviour?: "success" | "failure" | "random"; // For testing failure scenarios
+  inventoryBehaviour?: "success" | "failure" | "random"; // For testing failure scenarios
 }
 
 // ===========================================
@@ -51,6 +53,7 @@ export interface InventoryReservedEvent extends BaseEvent {
     orderId: string;
     items: OrderItem[];
     paymentBehaviour?: "success" | "failure" | "random";
+    inventoryBehaviour?: "success" | "failure" | "random";
   };
 }
 
@@ -76,6 +79,7 @@ export interface InventoryItem {
   stock_level: number;
   reserved: number;
   available: number;
+  reservationStatus: InventoryStatus;
 }
 
 export type InventoryEvent = InventoryReservedEvent | InventoryFailedEvent | InventoryReleasedEvent;

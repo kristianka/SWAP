@@ -1,5 +1,5 @@
 import type { InventoryReservedEvent, PaymentSuccessEvent, PaymentFailedEvent } from "@swap/shared";
-import { PaymentEventType, PaymentStatus, QUEUES } from "@swap/shared";
+import { PaymentEventType, PaymentStatus, QUEUES, shouldFailForBehaviour } from "@swap/shared";
 import { getChannel } from "../rabbitmq";
 import { hasProcessed, markProcessed } from "../storage/idempotencyStorage";
 import { addPayment, updatePaymentStatus } from "../storage/paymentStorage";
@@ -37,14 +37,7 @@ export const handleInventoryReserved = async (event: InventoryReservedEvent) => 
 
   try {
     // Determine if we should fail based on payment behaviour
-    let shouldFail = false;
-    if (paymentBehaviour === "failure") {
-      shouldFail = true;
-    } else if (paymentBehaviour === "random") {
-      shouldFail = Math.random() < 0.5; // 50% chance to fail
-    }
-
-    if (shouldFail) {
+    if (shouldFailForBehaviour(paymentBehaviour)) {
       throw new Error(
         "Transaction intentionally failed for testing purposes. Inventory released, order cancelled.",
       );

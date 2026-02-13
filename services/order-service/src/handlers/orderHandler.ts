@@ -7,13 +7,14 @@ import { getChannel } from "../rabbitmq";
 interface CreateOrderBody {
   items: OrderItem[];
   paymentBehaviour?: "success" | "failure" | "random";
+  inventoryBehaviour?: "success" | "failure" | "random";
 }
 
 export const createOrderHandler = async (
   req: FastifyRequest<{ Body: CreateOrderBody }>,
   reply: FastifyReply,
 ) => {
-  const { items, paymentBehaviour } = req.body;
+  const { items, paymentBehaviour, inventoryBehaviour } = req.body;
   const sessionId = req.headers["x-session-id"] as string;
 
   if (!sessionId) {
@@ -38,6 +39,7 @@ export const createOrderHandler = async (
     status: OrderStatus.PENDING,
     createdAt: new Date().toISOString(),
     paymentBehaviour,
+    inventoryBehaviour,
   };
 
   await addOrder(order);

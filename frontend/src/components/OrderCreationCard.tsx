@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Input } from "./ui/input";
-import { ShoppingCart, Plus, Minus, Trash2, Info } from "lucide-react";
+import { ShoppingCart, Plus, Minus, Trash2 } from "lucide-react";
 import { Spinner } from "./ui/spinner";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
+import { TooltipProvider } from "./ui/tooltip";
 import { api, type InventoryItem } from "../lib/api";
 import { BehaviourSelect } from "./BehaviourSelect";
 

@@ -1,5 +1,6 @@
 import { pool } from "../db";
 import type { OrderItem } from "@swap/shared";
+import { InventoryStatus } from "@swap/shared";
 
 export interface Product {
   id: string;
@@ -253,7 +254,13 @@ export const getAllProducts = async (sessionId: string) => {
     `,
     [sessionId],
   );
-  return result.rows;
+
+  // Add reservationStatus based on reserved count
+  return result.rows.map((product) => ({
+    ...product,
+    reservationStatus:
+      product.reserved > 0 ? InventoryStatus.RESERVED : InventoryStatus.NO_RESERVATIONS,
+  }));
 };
 
 /**
