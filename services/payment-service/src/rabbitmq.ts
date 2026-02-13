@@ -1,5 +1,5 @@
 import amqplib from "amqplib";
-import { assertAllQueues, assertAllExchanges, QUEUES, EXCHANGES } from "@swap/shared";
+import { assertAllQueues, assertAllExchanges, QUEUES, EXCHANGES, ROUTING_KEYS } from "@swap/shared";
 
 let channel: amqplib.Channel | null = null;
 
@@ -11,9 +11,14 @@ export const connectToRabbitMQ = async (): Promise<amqplib.Channel> => {
 
   await assertAllExchanges(channel);
   await assertAllQueues(channel);
-  await channel.bindQueue(QUEUES.INVENTORY_EVENTS, EXCHANGES.INVENTORY_EXCHANGE, "#");
 
-  console.log("✅ Payment Service connected to RabbitMQ");
+  await channel.bindQueue(
+    QUEUES.INVENTORY_EVENTS,
+    EXCHANGES.INVENTORY_EXCHANGE,
+    ROUTING_KEYS.INVENTORY_RESERVED,
+  );
+
+  console.log("Payment Service connected to RabbitMQ");
 
   return channel;
 };

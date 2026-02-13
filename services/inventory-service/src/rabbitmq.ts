@@ -1,5 +1,5 @@
 import amqplib from "amqplib";
-import { assertAllQueues, assertAllExchanges, QUEUES, EXCHANGES } from "@swap/shared";
+import { assertAllQueues, assertAllExchanges, QUEUES, EXCHANGES, ROUTING_KEYS } from "@swap/shared";
 
 let channel: amqplib.Channel | null = null;
 
@@ -10,8 +10,24 @@ export const connectToRabbitMQ = async () => {
 
   await assertAllExchanges(channel);
   await assertAllQueues(channel);
-  await channel.bindQueue(QUEUES.ORDER_EVENTS, EXCHANGES.PAYMENT_EXCHANGE, "#");
-  await channel.bindQueue(QUEUES.ORDER_EVENTS, EXCHANGES.ORDER_EXCHANGE, "#");
+
+  await channel.bindQueue(
+    QUEUES.ORDER_EVENTS,
+    EXCHANGES.ORDER_EXCHANGE,
+    ROUTING_KEYS.ORDER_CREATED,
+  );
+
+  await channel.bindQueue(
+    QUEUES.ORDER_EVENTS,
+    EXCHANGES.PAYMENT_EXCHANGE,
+    ROUTING_KEYS.PAYMENT_SUCCESS,
+  );
+
+  await channel.bindQueue(
+    QUEUES.ORDER_EVENTS,
+    EXCHANGES.PAYMENT_EXCHANGE,
+    ROUTING_KEYS.PAYMENT_FAILED,
+  );
 
   console.log("Inventory Service connected to RabbitMQ");
 
