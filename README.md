@@ -81,7 +81,7 @@ Happy path (=successful) path is the scenario when everything goes fine: user cr
 
 #### Payment Failure (with compensating transaction)
 
-To test the payment failure flow, pass `failTransaction: true` in the order creation request:
+To test payment behavior, pass `paymentBehaviour` in the order creation request:
 
 ```json
 {
@@ -91,11 +91,16 @@ To test the payment failure flow, pass `failTransaction: true` in the order crea
       "quantity": 1
     }
   ],
-  "failTransaction": true
+  "paymentBehaviour": "failure"
 }
 ```
 
-When this flag is set:
+**Payment Behaviour Options:**
+- `"success"` - Payment succeeds (default if omitted)
+- `"failure"` - Payment intentionally fails for testing
+- `"random"` - 50% chance to succeed or fail
+
+When payment fails:
 
 1. Order is created normally in PENDING status
 2. Inventory is reserved successfully

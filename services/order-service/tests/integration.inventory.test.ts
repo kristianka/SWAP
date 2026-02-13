@@ -103,7 +103,7 @@ describe("Inventory Integration Tests", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           items: [{ product: "monitor", quantity: 1 }],
-          failTransaction: true,
+          paymentBehaviour: "failure",
         }),
       });
 

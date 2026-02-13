@@ -17,7 +17,7 @@ describe("Microservices Integration Tests - Failure Scenarios", () => {
 
   describe("Failure Path", () => {
     test("should cancel order when payment fails", async () => {
-      // Create order with failTransaction flag
+      // Create order with paymentBehaviour set to failure
       const createResponse = await fetch(`${ORDER_SERVICE_URL}/orders`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -26,7 +26,7 @@ describe("Microservices Integration Tests - Failure Scenarios", () => {
             { product: "laptop", quantity: 1 },
             { product: "mouse", quantity: 2 },
           ],
-          failTransaction: true,
+          paymentBehaviour: "failure",
         }),
       });
 
@@ -56,7 +56,7 @@ describe("Microservices Integration Tests - Failure Scenarios", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           items: [{ product: "keyboard", quantity: 1 }],
-          failTransaction: true,
+          paymentBehaviour: "failure",
         }),
       });
 
@@ -78,7 +78,7 @@ describe("Microservices Integration Tests - Failure Scenarios", () => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             items: [{ product: "monitor", quantity: 1 }],
-            failTransaction: true,
+            paymentBehaviour: "failure",
           }),
         }),
         fetch(`${ORDER_SERVICE_URL}/orders`, {
@@ -86,7 +86,7 @@ describe("Microservices Integration Tests - Failure Scenarios", () => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             items: [{ product: "keyboard", quantity: 2 }],
-            failTransaction: true,
+            paymentBehaviour: "failure",
           }),
         }),
       ]);
@@ -115,7 +115,7 @@ describe("Microservices Integration Tests - Failure Scenarios", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           items: [{ product: "test-failure-flow", quantity: 1 }],
-          failTransaction: true,
+          paymentBehaviour: "failure",
         }),
       });
 
@@ -143,7 +143,7 @@ describe("Microservices Integration Tests - Failure Scenarios", () => {
             { product: "expensive-item", quantity: 100 },
             { product: "another-item", quantity: 50 },
           ],
-          failTransaction: true,
+          paymentBehaviour: "failure",
         }),
       });
 
@@ -181,7 +181,7 @@ describe("Microservices Integration Tests - Failure Scenarios", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           items: [{ product: "fail-item", quantity: 1 }],
-          failTransaction: true,
+          paymentBehaviour: "failure",
         }),
       });
 
