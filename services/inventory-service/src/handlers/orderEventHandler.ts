@@ -74,7 +74,8 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
       timestamp: new Date().toISOString(),
       data: {
         orderId,
-        reason: "Inventory reservation intentionally failed for testing purposes.",
+        reason:
+          "Inventory reservation intentionally failed for testing purposes. No actual reservation was made, and no payment was processed.",
       },
     };
 
