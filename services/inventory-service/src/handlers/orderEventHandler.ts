@@ -37,6 +37,7 @@ export const handleOrderEvent = async (
 const handleOrderCreated = async (event: OrderCreatedEvent) => {
   const orderId = event.data.id;
   const sagaId = event.correlationId;
+  const sessionId = event.sessionId;
   const idempotencyKey = `inventory:reserve:${orderId}`;
   const processed = await hasProcessed(idempotencyKey);
 
@@ -53,7 +54,7 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
   await new Promise((resolve) => setTimeout(resolve, 3000));
 
   // Attempt to reserve inventory
-  const result = await reserveItems(orderId, items);
+  const result = await reserveItems(sessionId, orderId, items);
   const channel = getChannel();
 
   if (!result.success) {
@@ -67,6 +68,7 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
     const failedEvent: InventoryFailedEvent = {
       type: InventoryEventType.INVENTORY_FAILED,
       correlationId: sagaId,
+      sessionId,
       timestamp: new Date().toISOString(),
       data: {
         orderId,
@@ -92,6 +94,7 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
   const reservedEvent: InventoryReservedEvent = {
     type: InventoryEventType.INVENTORY_RESERVED,
     correlationId: sagaId,
+    sessionId,
     timestamp: new Date().toISOString(),
     data: {
       orderId,
@@ -112,6 +115,7 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
 const handleOrderCancelled = async (event: OrderCreatedEvent) => {
   const orderId = event.data.id;
   const sagaId = event.correlationId;
+  const sessionId = event.sessionId;
   const idempotencyKey = `inventory:release:${orderId}`;
   const processed = await hasProcessed(idempotencyKey);
 
@@ -126,7 +130,7 @@ const handleOrderCancelled = async (event: OrderCreatedEvent) => {
   );
 
   // Compensating transaction: release the reserved inventory
-  const released = await releaseItems(orderId);
+  const released = await releaseItems(sessionId, orderId);
 
   if (released) {
     console.log(`[saga:${sagaId}] Inventory released for order ${orderId}`);
@@ -141,6 +145,7 @@ const handleOrderCancelled = async (event: OrderCreatedEvent) => {
 const handlePaymentFailed = async (event: PaymentFailedEvent) => {
   const orderId = event.data.orderId;
   const sagaId = event.correlationId;
+  const sessionId = event.sessionId;
   const idempotencyKey = `inventory:release:${orderId}`;
   const processed = await hasProcessed(idempotencyKey);
 
@@ -155,7 +160,7 @@ const handlePaymentFailed = async (event: PaymentFailedEvent) => {
   );
 
   // Compensating transaction: release the reserved inventory
-  const released = await releaseItems(orderId);
+  const released = await releaseItems(sessionId, orderId);
 
   if (released) {
     console.log(`[saga:${sagaId}] Inventory released for order ${orderId}`);
@@ -170,6 +175,7 @@ const handlePaymentFailed = async (event: PaymentFailedEvent) => {
 const handlePaymentSuccess = async (event: PaymentSuccessEvent) => {
   const orderId = event.data.orderId;
   const sagaId = event.correlationId;
+  const sessionId = event.sessionId;
   const idempotencyKey = `inventory:confirm:${orderId}`;
   const processed = await hasProcessed(idempotencyKey);
 
@@ -182,7 +188,7 @@ const handlePaymentSuccess = async (event: PaymentSuccessEvent) => {
   console.log(`[saga:${sagaId}] Confirming inventory reservation for order ${orderId}`);
 
   // Confirm the reservation (deduct from actual stock)
-  const confirmed = await confirmReservation(orderId);
+  const confirmed = await confirmReservation(sessionId, orderId);
 
   if (confirmed) {
     console.log(`[saga:${sagaId}] Inventory confirmed for order ${orderId}`);

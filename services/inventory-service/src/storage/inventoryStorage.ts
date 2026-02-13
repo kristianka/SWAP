@@ -20,14 +20,18 @@ export interface ReservationResult {
 /**
  * Check if all items can be reserved (without actually reserving)
  */
-export const checkAvailability = async (items: OrderItem[]): Promise<ReservationResult> => {
+export const checkAvailability = async (
+  sessionId: string,
+  items: OrderItem[],
+): Promise<ReservationResult> => {
   const failedItems: ReservationResult["failedItems"] = [];
 
   // loop all items one by one
   for (const item of items) {
-    const result = await pool.query<Product>(`SELECT id, available FROM products WHERE id = $1`, [
-      item.product,
-    ]);
+    const result = await pool.query<Product>(
+      `SELECT id, available FROM products WHERE id = $1 AND session_id = $2`,
+      [item.product, sessionId],
+    );
 
     const product = result.rows[0];
     if (!product) {
@@ -54,6 +58,7 @@ export const checkAvailability = async (items: OrderItem[]): Promise<Reservation
  * Returns true if all items were successfully reserved
  */
 export const reserveItems = async (
+  sessionId: string,
   orderId: string,
   items: OrderItem[],
 ): Promise<ReservationResult> => {
@@ -73,10 +78,10 @@ export const reserveItems = async (
              updated_at = CURRENT_TIMESTAMP,
              version = version + 1
          WHERE
-            id = $2 AND (stock_level - reserved) >= $1
+            id = $2 AND session_id = $3 AND (stock_level - reserved) >= $1
          RETURNING
             id, available`,
-        [item.quantity, item.product],
+        [item.quantity, item.product, sessionId],
       );
 
       if (result.rowCount === 0) {
@@ -87,9 +92,9 @@ export const reserveItems = async (
           FROM
             products
           WHERE
-            id = $1
+            id = $1 AND session_id = $2
         `,
-          [item.product],
+          [item.product, sessionId],
         );
 
         failedItems.push({
@@ -108,10 +113,10 @@ export const reserveItems = async (
 
     // Store reservation record for later release if needed
     await client.query(
-      `INSERT INTO reservations (order_id, items, created_at)
-       VALUES ($1, $2, CURRENT_TIMESTAMP)
-       ON CONFLICT (order_id) DO NOTHING`,
-      [orderId, JSON.stringify(items)],
+      `INSERT INTO reservations (order_id, session_id, items, created_at)
+       VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+       ON CONFLICT (order_id, session_id) DO NOTHING`,
+      [orderId, sessionId, JSON.stringify(items)],
     );
 
     // commit at end
@@ -129,7 +134,7 @@ export const reserveItems = async (
 /**
  * Release reserved inventory (compensating transaction for saga)
  */
-export const releaseItems = async (orderId: string): Promise<boolean> => {
+export const releaseItems = async (sessionId: string, orderId: string): Promise<boolean> => {
   const client = await pool.connect();
 
   try {
@@ -137,8 +142,8 @@ export const releaseItems = async (orderId: string): Promise<boolean> => {
 
     // Find the reservation
     const reservationResult = await client.query(
-      `SELECT items FROM reservations WHERE order_id = $1`,
-      [orderId],
+      `SELECT items FROM reservations WHERE order_id = $1 AND session_id = $2`,
+      [orderId, sessionId],
     );
 
     if (reservationResult.rows.length === 0) {
@@ -156,13 +161,16 @@ export const releaseItems = async (orderId: string): Promise<boolean> => {
          SET reserved = GREATEST(0, reserved - $1),
              updated_at = CURRENT_TIMESTAMP,
              version = version + 1
-         WHERE id = $2`,
-        [item.quantity, item.product],
+         WHERE id = $2 AND session_id = $3`,
+        [item.quantity, item.product, sessionId],
       );
     }
 
     // Delete the reservation record
-    await client.query(`DELETE FROM reservations WHERE order_id = $1`, [orderId]);
+    await client.query(`DELETE FROM reservations WHERE order_id = $1 AND session_id = $2`, [
+      orderId,
+      sessionId,
+    ]);
 
     await client.query("COMMIT");
     console.log(`✅ Released inventory for order ${orderId}`);
@@ -178,7 +186,7 @@ export const releaseItems = async (orderId: string): Promise<boolean> => {
 /**
  * Confirm reservation (move from reserved to sold) - called when payment succeeds
  */
-export const confirmReservation = async (orderId: string): Promise<boolean> => {
+export const confirmReservation = async (sessionId: string, orderId: string): Promise<boolean> => {
   const client = await pool.connect();
 
   try {
@@ -186,8 +194,8 @@ export const confirmReservation = async (orderId: string): Promise<boolean> => {
 
     // Find the reservation
     const reservationResult = await client.query(
-      `SELECT items FROM reservations WHERE order_id = $1`,
-      [orderId],
+      `SELECT items FROM reservations WHERE order_id = $1 AND session_id = $2`,
+      [orderId, sessionId],
     );
 
     if (reservationResult.rows.length === 0) {
@@ -206,15 +214,15 @@ export const confirmReservation = async (orderId: string): Promise<boolean> => {
              reserved = reserved - $1,
              updated_at = CURRENT_TIMESTAMP,
              version = version + 1
-         WHERE id = $2`,
-        [item.quantity, item.product],
+         WHERE id = $2 AND session_id = $3`,
+        [item.quantity, item.product, sessionId],
       );
     }
 
     // Mark reservation as confirmed
     await client.query(
-      `UPDATE reservations SET status = 'confirmed', confirmed_at = CURRENT_TIMESTAMP WHERE order_id = $1`,
-      [orderId],
+      `UPDATE reservations SET status = 'confirmed', confirmed_at = CURRENT_TIMESTAMP WHERE order_id = $1 AND session_id = $2`,
+      [orderId, sessionId],
     );
 
     await client.query("COMMIT");
@@ -231,66 +239,76 @@ export const confirmReservation = async (orderId: string): Promise<boolean> => {
 /**
  * Get all products with their stock levels
  */
-export const getAllProducts = async () => {
-  const result = await pool.query<Product>(`
+export const getAllProducts = async (sessionId: string) => {
+  const result = await pool.query<Product>(
+    `
     SELECT
         * 
     FROM
         products
+    WHERE
+        session_id = $1
     ORDER BY
         name ASC
-    `);
+    `,
+    [sessionId],
+  );
   return result.rows;
 };
 
 /**
  * Seed initial product data (for testing/demo purposes)
  */
-export const seedProducts = async () => {
+export const seedProducts = async (sessionId: string) => {
   const products = [
-    { id: "prod-001", name: "Laptop", stock_level: 10 },
-    { id: "prod-002", name: "Mouse", stock_level: 50 },
-    { id: "prod-003", name: "Keyboard", stock_level: 30 },
     { id: "laptop", name: "Gaming Laptop", stock_level: 5 },
-    { id: "mouse", name: "Wireless Mouse", stock_level: 100 },
-    { id: "keyboard", name: "Mechanical Keyboard", stock_level: 25 },
+    { id: "mouse", name: "Wireless Mouse", stock_level: 67 },
+    { id: "keyboard", name: "Mechanical Keyboard", stock_level: 21 },
     { id: "monitor", name: "4K Monitor", stock_level: 15 },
   ];
 
   for (const product of products) {
     await pool.query(
-      `INSERT INTO products (id, name, stock_level)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (id) DO UPDATE SET
+      `INSERT INTO products (id, session_id, name, stock_level)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (id, session_id) DO UPDATE SET
          stock_level = EXCLUDED.stock_level,
          updated_at = CURRENT_TIMESTAMP`,
-      [product.id, product.name, product.stock_level],
+      [product.id, sessionId, product.name, product.stock_level],
     );
   }
 
-  return getAllProducts();
+  return getAllProducts(sessionId);
 };
 
 /**
  * Get inventory statistics
  */
-export const getInventoryStats = async () => {
-  const result = await pool.query(`
+export const getInventoryStats = async (sessionId: string) => {
+  const result = await pool.query(
+    `
     SELECT
       COUNT(*) as total_products,
       SUM(stock_level) as total_stock,
       SUM(reserved) as total_reserved,
       SUM(stock_level - reserved) as total_available
     FROM products
-  `);
+    WHERE session_id = $1
+  `,
+    [sessionId],
+  );
 
-  const reservationsResult = await pool.query(`
+  const reservationsResult = await pool.query(
+    `
     SELECT
       COUNT(*) FILTER (WHERE status = 'pending') as pending_reservations,
       COUNT(*) FILTER (WHERE status = 'confirmed') as confirmed_reservations,
       COUNT(*) as total_reservations
     FROM reservations
-  `);
+    WHERE session_id = $1
+  `,
+    [sessionId],
+  );
 
   return {
     products: result.rows[0],
@@ -302,16 +320,16 @@ export const getInventoryStats = async () => {
  * Reset inventory to initial state (for testing)
  * Clears all reservations and reseeds products
  */
-export const resetInventory = async (): Promise<Product[]> => {
+export const resetInventory = async (sessionId: string): Promise<Product[]> => {
   // Clear all reservations
-  await pool.query(`DELETE FROM reservations`);
+  await pool.query(`DELETE FROM reservations WHERE session_id = $1`, [sessionId]);
 
   // Clear all processed events (idempotency keys)
   await pool.query(`DELETE FROM processed_events`);
 
   // Reset products - delete all and reseed
-  await pool.query(`DELETE FROM products`);
+  await pool.query(`DELETE FROM products WHERE session_id = $1`, [sessionId]);
 
   // Seed fresh data
-  return seedProducts();
+  return seedProducts(sessionId);
 };

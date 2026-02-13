@@ -11,26 +11,28 @@ bun run dev
 
 ## API Endpoints
 
+**Note:** All endpoints require `x-session-id` header for data isolation.
+
 ### Get Inventory
 
 ```bash
-curl http://localhost:3002/inventory
+curl -H "x-session-id: your-session-id" http://localhost:3002/inventory
 ```
 
-Returns all products with current stock levels and reservation details.
+Returns all products with current stock levels and reservation details for the specified session.
 
 ### Seed Initial Data
 
 ```bash
-curl -X POST http://localhost:3002/inventory/seed
+curl -X POST -H "x-session-id: your-session-id" http://localhost:3002/inventory/seed
 ```
 
-Seeds products with initial stock levels for testing.
+Seeds products with initial stock levels for testing (session-specific).
 
 ### Get Statistics
 
 ```bash
-curl http://localhost:3002/inventory/stats
+curl -H "x-session-id: your-session-id" http://localhost:3002/inventory/stats
 ```
 
 Returns aggregated inventory statistics:
@@ -55,9 +57,17 @@ Returns aggregated inventory statistics:
 
 The inventory service maintains three tables:
 
-- **products** - Stores product details (id, name, stock, reserved_stock)
-- **reservations** - Tracks stock reservations by order (id, order_id, product_id, quantity, status)
+- **products** - Stores product details with composite primary key `(id, session_id)` for isolation
+- **reservations** - Tracks stock reservations by order with composite key `(order_id, session_id)`
 - **processed_events** - Idempotency tracking to prevent duplicate processing
+
+### Session Isolation
+
+All data tables include `session_id` column:
+- Composite primary keys ensure data isolation between sessions
+- All queries filter by `session_id` from request headers
+- Each session maintains independent inventory and reservations
+- Enables multiple concurrent users in demo environments
 
 ## Saga Participation
 
