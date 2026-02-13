@@ -25,13 +25,37 @@ This differs from **orchestration** where a central service would direct each st
 - **Inventory Service** - Manages inventory reservations and releases
 - **Payment Service** - Processes payments and persists transaction records
 
-### RabbitMQ Queues
+### RabbitMQ Architecture
 
-| Queue              | Constant                  | Events                                                                                                       | Consumers                        |
-| ------------------ | ------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------- |
-| `order-events`     | `QUEUES.ORDER_EVENTS`     | `OrderEventType.ORDER_CREATED`, `PaymentEventType.PAYMENT_SUCCESS`                                           | Inventory Service                |
-| `inventory-events` | `QUEUES.INVENTORY_EVENTS` | `InventoryEventType.INVENTORY_RESERVED`, `InventoryEventType.INVENTORY_FAILED`                               | Payment Service                  |
-| `payment-events`   | `QUEUES.PAYMENT_EVENTS`   | `PaymentEventType.PAYMENT_SUCCESS`, `PaymentEventType.PAYMENT_FAILED`, `InventoryEventType.INVENTORY_FAILED` | Order Service, Inventory Service |
+This system uses **RabbitMQ topic exchanges** for true pub/sub choreography:
+
+**Exchanges:**
+
+- `order-exchange` - Order-related events
+- `inventory-exchange` - Inventory-related events
+- `payment-exchange` - Payment-related events
+
+**Queues & Bindings:**
+
+| Queue              | Constant                  | Bound Exchanges                          | Events Received                                         | Consumer          |
+| ------------------ | ------------------------- | ---------------------------------------- | ------------------------------------------------------- | ----------------- |
+| `order-events`     | `QUEUES.ORDER_EVENTS`     | `order-exchange`, `payment-exchange`     | `ORDER_CREATED`, `PAYMENT_SUCCESS`, `PAYMENT_FAILED`    | Inventory Service |
+| `inventory-events` | `QUEUES.INVENTORY_EVENTS` | `inventory-exchange`                     | `INVENTORY_RESERVED`                                    | Payment Service   |
+| `payment-events`   | `QUEUES.PAYMENT_EVENTS`   | `payment-exchange`, `inventory-exchange` | `PAYMENT_SUCCESS`, `PAYMENT_FAILED`, `INVENTORY_FAILED` | Order Service     |
+
+**How Exchanges Enable Choreography:**
+
+- Services publish events to **exchanges** (not directly to queues)
+- Each service creates its own queue and **binds** it to exchanges it cares about
+- Publishers don't know who consumes their events (true decoupling)
+- New consumers can be added by simply binding new queues to existing exchanges
+- No dual publishing needed - one publish reaches all interested subscribers
+
+**Example Flow:**
+
+1. Payment Service publishes `PAYMENT_SUCCESS` to `payment-exchange`
+2. Both Order Service and Inventory Service receive it (their queues are bound to that exchange)
+3. Payment Service doesn't know or care who listens - pure choreography
 
 ## Flow
 
@@ -39,7 +63,9 @@ This differs from **orchestration** where a central service would direct each st
     sequenceDiagram
         participant Client
         participant OrderService as Order Service
-        participant RabbitMQ
+        participant OrderExchange as order-exchange
+        participant InventoryExchange as inventory-exchange
+        participant PaymentExchange as payment-exchange
         participant InventoryService as Inventory Service
         participant PaymentService as Payment Service
 
@@ -47,38 +73,38 @@ This differs from **orchestration** where a central service would direct each st
 
         Client->>OrderService: POST /orders
         OrderService->>OrderService: Create Order (PENDING)
-        OrderService->>RabbitMQ: ORDER_CREATED → QUEUES.ORDER_EVENTS
+        OrderService->>OrderExchange: Publish ORDER_CREATED
         OrderService-->>Client: 200 OK
 
-        RabbitMQ->>InventoryService: Consume ORDER_CREATED
+        OrderExchange->>InventoryService: Deliver to order-events queue
         InventoryService->>InventoryService: Check & Reserve Inventory
         Note over InventoryService: 3s processing
-        InventoryService->>RabbitMQ: INVENTORY_RESERVED → QUEUES.INVENTORY_EVENTS
+        InventoryService->>InventoryExchange: Publish INVENTORY_RESERVED
 
-        RabbitMQ->>PaymentService: Consume INVENTORY_RESERVED
+        InventoryExchange->>PaymentService: Deliver to inventory-events queue
         PaymentService->>PaymentService: Process Payment
         Note over PaymentService: 5s processing
-        PaymentService->>RabbitMQ: PAYMENT_SUCCESS → QUEUES.PAYMENT_EVENTS
+        PaymentService->>PaymentExchange: Publish PAYMENT_SUCCESS
 
-        RabbitMQ->>OrderService: Consume PAYMENT_SUCCESS
+        PaymentExchange->>OrderService: Deliver to payment-events queue
         OrderService->>OrderService: Update Order (COMPLETED)
-        RabbitMQ->>InventoryService: Consume PAYMENT_SUCCESS
+        PaymentExchange->>InventoryService: Deliver to order-events queue
         InventoryService->>InventoryService: Confirm Reservation (deduct stock)
 
         Note over Client,PaymentService: Payment Failure Path (Compensating Transaction)
 
-        PaymentService->>RabbitMQ: PAYMENT_FAILED → QUEUES.PAYMENT_EVENTS
-        RabbitMQ->>OrderService: Consume PAYMENT_FAILED
+        PaymentService->>PaymentExchange: Publish PAYMENT_FAILED
+        PaymentExchange->>OrderService: Deliver to payment-events queue
         OrderService->>OrderService: Update Order (CANCELLED)
-        RabbitMQ->>InventoryService: Consume PAYMENT_FAILED
+        PaymentExchange->>InventoryService: Deliver to order-events queue
         InventoryService->>InventoryService: Release Inventory (compensate)
 
         Note over Client,PaymentService: Inventory Failure Path
 
-        RabbitMQ->>InventoryService: Consume ORDER_CREATED
+        OrderExchange->>InventoryService: Deliver ORDER_CREATED
         InventoryService->>InventoryService: Check Inventory (insufficient)
-        InventoryService->>RabbitMQ: INVENTORY_FAILED → QUEUES.INVENTORY_EVENTS
-        RabbitMQ->>OrderService: Consume INVENTORY_FAILED
+        InventoryService->>InventoryExchange: Publish INVENTORY_FAILED
+        InventoryExchange->>OrderService: Deliver to payment-events queue
         OrderService->>OrderService: Update Order (CANCELLED)
 ```
 
