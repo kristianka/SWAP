@@ -4,8 +4,6 @@ import { InventoryEventType, QUEUES } from "@swap/shared";
 import { handleInventoryReserved } from "../handlers/paymentEventHandler";
 
 export const startPaymentConsumer = async (channel: Channel) => {
-  await channel.assertQueue(QUEUES.INVENTORY_EVENTS);
-
   // Consume messages from INVENTORY_EVENTS - react to inventory reservations
   channel.consume(QUEUES.INVENTORY_EVENTS, async (msg: ConsumeMessage | null) => {
     if (msg) {

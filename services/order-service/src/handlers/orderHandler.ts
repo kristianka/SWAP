@@ -21,8 +21,12 @@ export const createOrderHandler = async (
     throw new Error("Order must contain at least one item.");
   }
 
+  const orderId = Bun.randomUUIDv7();
+  const sagaId = Bun.randomUUIDv7(); // Unique saga ID for this transaction
+
   const order: Order = {
-    id: Bun.randomUUIDv7(),
+    id: orderId,
+    sagaId,
     items,
     status: OrderStatus.PENDING,
     createdAt: new Date().toISOString(),
@@ -31,16 +35,18 @@ export const createOrderHandler = async (
 
   await addOrder(order);
 
-  // Publish event to RabbitMQ
+  // Publish event to RabbitMQ with saga ID for end-to-end tracing
   const event: OrderEvent = {
     type: OrderEventType.ORDER_CREATED,
+    correlationId: sagaId,
+    timestamp: new Date().toISOString(),
     data: order,
   };
 
   const channel = getChannel();
   channel.sendToQueue(QUEUES.ORDER_EVENTS, Buffer.from(JSON.stringify(event)));
 
-  console.log(`Published ${OrderEventType.ORDER_CREATED} for order ${order.id}`);
+  console.log(`[saga:${sagaId}] Published ${OrderEventType.ORDER_CREATED} for order ${order.id}`);
 
   return order;
 };

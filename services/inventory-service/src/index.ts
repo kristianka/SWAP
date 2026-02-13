@@ -1,4 +1,5 @@
 import Fastify from "fastify";
+import cors from "@fastify/cors";
 import { connectToRabbitMQ } from "./rabbitmq";
 import { registerHealthRoutes } from "./routes/health";
 import { registerInventoryRoutes } from "./routes/inventory";
@@ -6,6 +7,9 @@ import { startOrderConsumer } from "./consumers/orderConsumer";
 import { initDatabase } from "./db";
 
 const app = Fastify();
+
+// Enable CORS
+app.register(cors, { origin: true });
 
 async function start() {
   try {

@@ -1,0 +1,5 @@
+{
+  "name": "swap-microservices",
+  "private": true,
+  "workspaces": ["shared", "services/*"]
+}

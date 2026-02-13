@@ -15,9 +15,11 @@ export interface OrderItem {
 
 export interface Order {
   id: string;
+  sagaId: string; // Unique identifier for the entire saga/transaction
   items: OrderItem[];
   status: OrderStatus;
   createdAt: string;
+  errorMessage?: string; // Error message when order fails
   failTransaction?: boolean; // For testing failure scenarios
 }
 
@@ -25,8 +27,14 @@ export interface Order {
 // Event Payloads (what services exchange)
 // ===========================================
 
+// Base event interface with correlation ID for tracing
+export interface BaseEvent {
+  correlationId: string; // Tracks the entire saga/transaction
+  timestamp: string;
+}
+
 // Order Service events
-export interface OrderEvent {
+export interface OrderEvent extends BaseEvent {
   type: OrderEventType;
   data: Order;
 }
@@ -34,7 +42,7 @@ export interface OrderEvent {
 export type OrderCreatedEvent = OrderEvent;
 
 // Inventory Service events
-export interface InventoryReservedEvent {
+export interface InventoryReservedEvent extends BaseEvent {
   type: InventoryEventType.INVENTORY_RESERVED;
   data: {
     orderId: string;
@@ -43,7 +51,7 @@ export interface InventoryReservedEvent {
   };
 }
 
-export interface InventoryFailedEvent {
+export interface InventoryFailedEvent extends BaseEvent {
   type: InventoryEventType.INVENTORY_FAILED;
   data: {
     orderId: string;
@@ -51,7 +59,7 @@ export interface InventoryFailedEvent {
   };
 }
 
-export interface InventoryReleasedEvent {
+export interface InventoryReleasedEvent extends BaseEvent {
   type: InventoryEventType.INVENTORY_RELEASED;
   data: {
     orderId: string;
@@ -59,10 +67,18 @@ export interface InventoryReleasedEvent {
   };
 }
 
+export interface InventoryItem {
+  id: string;
+  name: string;
+  stock_level: number;
+  reserved: number;
+  available: number;
+}
+
 export type InventoryEvent = InventoryReservedEvent | InventoryFailedEvent | InventoryReleasedEvent;
 
 // Payment Service events
-export interface PaymentSuccessEvent {
+export interface PaymentSuccessEvent extends BaseEvent {
   type: PaymentEventType.PAYMENT_SUCCESS;
   data: {
     orderId: string;
@@ -71,12 +87,19 @@ export interface PaymentSuccessEvent {
   };
 }
 
-export interface PaymentFailedEvent {
+export interface PaymentFailedEvent extends BaseEvent {
   type: PaymentEventType.PAYMENT_FAILED;
   data: {
     orderId: string;
     reason: string;
   };
+}
+
+export interface Payment {
+  id: string;
+  order_id: string;
+  amount: number;
+  status: string;
 }
 
 export type PaymentEvent = PaymentSuccessEvent | PaymentFailedEvent;

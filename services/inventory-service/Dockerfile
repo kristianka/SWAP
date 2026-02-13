@@ -4,7 +4,7 @@ WORKDIR /app
 # Install dependencies for all workspace packages
 FROM base AS deps
 # Copy workspace configuration
-COPY package.json ./
+COPY package.docker.json ./package.json
 COPY bun.lockb* ./
 
 # Copy shared package
@@ -22,7 +22,7 @@ RUN bun install --frozen-lockfile
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/shared ./shared
-COPY package.json ./
+COPY package.docker.json ./package.json
 
 # Copy inventory-service source
 COPY services/inventory-service services/inventory-service/
@@ -35,7 +35,7 @@ ENV NODE_ENV=production
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/shared ./shared
 COPY --from=build /app/services/inventory-service ./services/inventory-service
-COPY package.json ./
+COPY package.docker.json ./package.json
 
 WORKDIR /app/services/inventory-service
 

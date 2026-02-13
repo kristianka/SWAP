@@ -6,10 +6,17 @@ export const addOrder = async (order: Order): Promise<void> => {
   await pool.query(
     `
     INSERT INTO orders
-      (id, items, status, created_at)
-    VALUES ($1, $2, $3, $4)
+      (id, saga_id, items, status, error_message, created_at)
+    VALUES ($1, $2, $3, $4, $5, $6)
     `,
-    [order.id, JSON.stringify(order.items), order.status, order.createdAt],
+    [
+      order.id,
+      order.sagaId,
+      JSON.stringify(order.items),
+      order.status,
+      order.errorMessage || null,
+      order.createdAt,
+    ],
   );
 };
 
@@ -24,8 +31,10 @@ export const getOrders = async (): Promise<Order[]> => {
   `);
   return result.rows.map((row) => ({
     id: row.id,
+    sagaId: row.saga_id,
     items: row.items,
     status: row.status,
+    errorMessage: row.error_message,
     createdAt: row.created_at,
   }));
 };
@@ -46,24 +55,31 @@ export const getOrderById = async (id: string): Promise<Order | undefined> => {
 
   const row = result.rows[0];
   return {
+    sagaId: row.saga_id,
     id: row.id,
     items: row.items,
     status: row.status,
+    errorMessage: row.error_message,
     createdAt: row.created_at,
   };
 };
 
-export const updateOrderStatus = async (orderId: string, status: OrderStatus): Promise<boolean> => {
+export const updateOrderStatus = async (
+  orderId: string,
+  status: OrderStatus,
+  errorMessage?: string,
+): Promise<boolean> => {
   const result = await pool.query(
     `
     UPDATE
       orders
     SET
-      status = $1
+      status = $1,
+      error_message = $2
     WHERE
-      id = $2
+      id = $3
     `,
-    [status, orderId],
+    [status, errorMessage || null, orderId],
   );
   return result.rowCount !== null && result.rowCount > 0;
 };
