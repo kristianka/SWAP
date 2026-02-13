@@ -24,14 +24,36 @@ export const initDatabase = async (): Promise<void> => {
     // Create payments table (current state)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS payments (
-        id TEXT PRIMARY KEY,
+        id TEXT,
+        session_id TEXT NOT NULL,
         order_id TEXT NOT NULL,
         amount DECIMAL(10, 2) NOT NULL,
         status TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        version INTEGER NOT NULL DEFAULT 1
+        version INTEGER NOT NULL DEFAULT 1,
+        PRIMARY KEY (id, session_id)
       )
+    `);
+
+    // Add session_id column if it doesn't exist (migration)
+    await pool.query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'payments' AND column_name = 'session_id'
+        ) THEN
+          ALTER TABLE payments DROP CONSTRAINT IF EXISTS payments_pkey;
+          ALTER TABLE payments ADD COLUMN session_id TEXT NOT NULL DEFAULT 'default';
+          ALTER TABLE payments ADD PRIMARY KEY (id, session_id);
+        END IF;
+      END $$;
+    `);
+
+    // Create index on session_id for efficient queries
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_payments_session ON payments(session_id);
     `);
 
     // Create idempotency table for external event processing

@@ -11,20 +11,29 @@ bun run dev
 
 ## API Endpoints
 
+**Note:** All endpoints require `x-session-id` header for data isolation.
+
 ### Get Payments
 
 ```bash
-curl http://localhost:3003/payments
+curl -H "x-session-id: your-session-id" http://localhost:3003/payments
 ```
 
-Returns all payment transactions with their status (SUCCESS/FAILED).
+Returns all payment transactions with their status (SUCCESS/FAILED) for the specified session.
 
 ## Database
 
 The payment service maintains two tables:
 
-- **payments** - Stores payment transaction records (id, order_id, amount, status)
+- **payments** - Stores payment transaction records with composite primary key `(id, session_id)` for isolation
 - **processed_events** - Idempotency tracking to prevent duplicate processing
+
+### Session Isolation
+
+- Composite primary key `(id, session_id)` ensures data isolation
+- All queries filter by `session_id` received in saga events
+- Session ID flows through events from order creation
+- Each session maintains independent payment history
 
 ## Saga Participation
 

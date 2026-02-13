@@ -17,6 +17,7 @@ export interface OrderItem {
 export interface Order {
   id: string;
   sagaId: string; // Unique identifier for the entire saga/transaction
+  sessionId: string; // User session for demo isolation
   items: OrderItem[];
   status: OrderStatus;
   createdAt: string;
@@ -31,6 +32,7 @@ export interface Order {
 // Base event interface with correlation ID for tracing
 export interface BaseEvent {
   correlationId: string; // Tracks the entire saga/transaction
+  sessionId: string; // User session for demo isolation
   timestamp: string;
 }
 
