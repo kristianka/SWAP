@@ -39,7 +39,7 @@ The payment service maintains two tables:
 
 The payment service participates in the order saga:
 
-1. **INVENTORY_RESERVED** → Process payment (mock 3s delay)
+1. **INVENTORY_RESERVED** → Process payment (mock 5s delay)
    - On success: Save payment record with status "SUCCESS", emit PAYMENT_SUCCESS
    - On failure: Save payment record with status "FAILED", emit PAYMENT_FAILED
 2. Payment results trigger:

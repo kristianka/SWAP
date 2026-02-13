@@ -68,7 +68,7 @@ The order service acts as the saga coordinator, managing the distributed transac
    - Triggers inventory reservation
 
 2. **INVENTORY_RESERVED** → Triggers payment processing
-   - Payment service processes payment (3s mock delay)
+   - Payment service processes payment (5s mock delay)
 
 3. **PAYMENT_SUCCESS** → Order completion
    - Updates order status to "COMPLETED"
