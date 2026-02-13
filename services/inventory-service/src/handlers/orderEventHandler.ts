@@ -9,8 +9,10 @@ import {
   OrderEventType,
   PaymentEventType,
   InventoryEventType,
-  QUEUES,
+  EXCHANGES,
+  ROUTING_KEYS,
   shouldFailForBehaviour,
+  publishToExchange,
 } from "@swap/shared";
 import { getChannel } from "../rabbitmq";
 import { hasProcessed, markProcessed } from "../storage/idempotencyStorage";
@@ -80,7 +82,12 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
     };
 
     const channel = getChannel();
-    channel.sendToQueue(QUEUES.PAYMENT_EVENTS, Buffer.from(JSON.stringify(failedEvent)));
+    publishToExchange(
+      channel,
+      EXCHANGES.INVENTORY_EXCHANGE,
+      ROUTING_KEYS.INVENTORY_FAILED,
+      failedEvent,
+    );
     console.log(
       `[saga:${sagaId}] Published ${InventoryEventType.INVENTORY_FAILED} for order ${orderId}`,
     );
@@ -94,8 +101,6 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
   const channel = getChannel();
 
   if (!result.success) {
-    // Insufficient inventory - publish INVENTORY_FAILED to PAYMENT_EVENTS
-    // (so it reaches order-service without competing with payment-service)
     console.log(
       `[saga:${sagaId}] Inventory reservation failed for order ${orderId}:`,
       result.failedItems,
@@ -114,8 +119,12 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
       },
     };
 
-    // Route to PAYMENT_EVENTS queue (only order-service consumes this)
-    channel.sendToQueue(QUEUES.PAYMENT_EVENTS, Buffer.from(JSON.stringify(failedEvent)));
+    publishToExchange(
+      channel,
+      EXCHANGES.INVENTORY_EXCHANGE,
+      ROUTING_KEYS.INVENTORY_FAILED,
+      failedEvent,
+    );
     console.log(
       `[saga:${sagaId}] Published ${InventoryEventType.INVENTORY_FAILED} for order ${orderId}`,
     );
@@ -140,7 +149,12 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
     },
   };
 
-  channel.sendToQueue(QUEUES.INVENTORY_EVENTS, Buffer.from(JSON.stringify(reservedEvent)));
+  publishToExchange(
+    channel,
+    EXCHANGES.INVENTORY_EXCHANGE,
+    ROUTING_KEYS.INVENTORY_RESERVED,
+    reservedEvent,
+  );
   console.log(
     `[saga:${sagaId}] Published ${InventoryEventType.INVENTORY_RESERVED} for order ${orderId}`,
   );

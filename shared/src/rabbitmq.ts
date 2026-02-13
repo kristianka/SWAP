@@ -1,5 +1,5 @@
 import type { Channel } from "amqplib";
-import { QUEUES } from "./constants";
+import { QUEUES, EXCHANGES } from "./constants";
 
 /**
  * Dead Letter Queue configuration
@@ -62,6 +62,18 @@ export const QUEUE_CONFIGS: QueueConfig[] = [
 ];
 
 /**
+ * Assert all exchanges with proper configuration
+ * Topic exchanges allow flexible routing based on routing keys
+ */
+export const assertAllExchanges = async (channel: Channel): Promise<void> => {
+  // Assert topic exchanges for pub/sub pattern
+  await channel.assertExchange(EXCHANGES.ORDER_EXCHANGE, "topic", { durable: true });
+  await channel.assertExchange(EXCHANGES.INVENTORY_EXCHANGE, "topic", { durable: true });
+  await channel.assertExchange(EXCHANGES.PAYMENT_EXCHANGE, "topic", { durable: true });
+  console.log("All exchanges asserted successfully");
+};
+
+/**
  * Assert all queues with proper configuration
  * This ensures queues exist before any producer tries to send messages
  */
@@ -70,6 +82,21 @@ export const assertAllQueues = async (channel: Channel): Promise<void> => {
     await channel.assertQueue(config.name, config.options);
   }
   console.log("All queues asserted successfully");
+};
+
+/**
+ * Publish an event to an exchange
+ * This is the choreography pattern - publisher doesn't know who consumes
+ */
+export const publishToExchange = (
+  channel: Channel,
+  exchange: string,
+  routingKey: string,
+  message: object,
+): void => {
+  channel.publish(exchange, routingKey, Buffer.from(JSON.stringify(message)), {
+    persistent: true,
+  });
 };
 
 /**

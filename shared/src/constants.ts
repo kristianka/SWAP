@@ -72,6 +72,27 @@ export function shouldFailForBehaviour(behaviour?: TestBehaviour | string): bool
 }
 
 // ===========================================
+// Exchange Names (pub/sub routing)
+// ===========================================
+export const EXCHANGES = {
+  ORDER_EXCHANGE: "order-exchange",
+  INVENTORY_EXCHANGE: "inventory-exchange",
+  PAYMENT_EXCHANGE: "payment-exchange",
+} as const;
+
+// ===========================================
+// Routing Keys (event types for topic exchanges)
+// ===========================================
+export const ROUTING_KEYS = {
+  ORDER_CREATED: "order.created",
+  ORDER_CANCELLED: "order.cancelled",
+  INVENTORY_RESERVED: "inventory.reserved",
+  INVENTORY_FAILED: "inventory.failed",
+  PAYMENT_SUCCESS: "payment.success",
+  PAYMENT_FAILED: "payment.failed",
+} as const;
+
+// ===========================================
 // Queue Names (message broker routing)
 // ===========================================
 export const QUEUES = {
