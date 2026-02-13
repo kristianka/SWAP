@@ -41,7 +41,7 @@ export const OrderTable = ({ orders, lastRefreshed }: OrderTableProps) => {
           <TableHeader>
             <TableRow>
               <TableHead className="w-70">ID</TableHead>
-              <TableHead className="w-40">Processing</TableHead>
+              <TableHead className="w-40">Active</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Items</TableHead>
               <TableHead>Error</TableHead>

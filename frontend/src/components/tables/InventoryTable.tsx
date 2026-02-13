@@ -34,7 +34,7 @@ export const InventoryTable = ({ inventory, lastRefreshed }: InventoryTable) => 
           <TableHeader>
             <TableRow>
               <TableHead className="w-70">ID</TableHead>
-              <TableHead className="w-40">Processing</TableHead>
+              <TableHead className="w-40">Active</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Name</TableHead>
               <TableHead className="text-right">Stock Level</TableHead>

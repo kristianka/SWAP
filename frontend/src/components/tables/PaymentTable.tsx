@@ -37,7 +37,7 @@ export const PaymentTable = ({ payments, lastRefreshed }: PaymentTableProps) => 
           <TableHeader>
             <TableRow>
               <TableHead className="w-70">ID</TableHead>
-              <TableHead className="w-40">Processing</TableHead>
+              <TableHead className="w-40">Active</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Order ID</TableHead>
               <TableHead className="text-right">Amount</TableHead>
