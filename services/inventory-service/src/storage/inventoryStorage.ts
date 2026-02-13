@@ -255,11 +255,15 @@ export const getAllProducts = async (sessionId: string) => {
     [sessionId],
   );
 
-  // Add reservationStatus based on reserved count
+  // Add reservationStatus based on reserved and available counts
   return result.rows.map((product) => ({
     ...product,
     reservationStatus:
-      product.reserved > 0 ? InventoryStatus.RESERVED : InventoryStatus.NO_RESERVATIONS,
+      product.reserved > 0
+        ? product.available === 0
+          ? InventoryStatus.RESERVED
+          : InventoryStatus.RESERVING
+        : InventoryStatus.NO_RESERVATIONS,
   }));
 };
 
@@ -332,7 +336,7 @@ export const resetInventory = async (sessionId: string): Promise<Product[]> => {
   await pool.query(`DELETE FROM reservations WHERE session_id = $1`, [sessionId]);
 
   // Clear all processed events (idempotency keys)
-  await pool.query(`DELETE FROM processed_events`);
+  await pool.query(`DELETE FROM processed_events WHERE session_id = $1`, [sessionId]);
 
   // Reset products - delete all and reseed
   await pool.query(`DELETE FROM products WHERE session_id = $1`, [sessionId]);

@@ -45,7 +45,7 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
   const sagaId = event.correlationId;
   const sessionId = event.sessionId;
   const idempotencyKey = `inventory:reserve:${orderId}`;
-  const processed = await hasProcessed(idempotencyKey);
+  const processed = await hasProcessed(sessionId, idempotencyKey);
 
   // Idempotency check, skip if already processed
   if (processed) {
@@ -85,7 +85,7 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
       `[saga:${sagaId}] Published ${InventoryEventType.INVENTORY_FAILED} for order ${orderId}`,
     );
 
-    await markProcessed(idempotencyKey);
+    await markProcessed(sessionId, idempotencyKey);
     return false;
   }
 
@@ -120,7 +120,7 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
       `[saga:${sagaId}] Published ${InventoryEventType.INVENTORY_FAILED} for order ${orderId}`,
     );
 
-    await markProcessed(idempotencyKey);
+    await markProcessed(sessionId, idempotencyKey);
     return false;
   }
 
@@ -145,7 +145,7 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
     `[saga:${sagaId}] Published ${InventoryEventType.INVENTORY_RESERVED} for order ${orderId}`,
   );
 
-  await markProcessed(idempotencyKey);
+  await markProcessed(sessionId, idempotencyKey);
   return true;
 };
 
@@ -154,7 +154,7 @@ const handleOrderCancelled = async (event: OrderCreatedEvent) => {
   const sagaId = event.correlationId;
   const sessionId = event.sessionId;
   const idempotencyKey = `inventory:release:${orderId}`;
-  const processed = await hasProcessed(idempotencyKey);
+  const processed = await hasProcessed(sessionId, idempotencyKey);
 
   // Idempotency check: skip if already processed
   if (processed) {
@@ -175,7 +175,7 @@ const handleOrderCancelled = async (event: OrderCreatedEvent) => {
     console.log(`[saga:${sagaId}] No reservation found to release for order ${orderId}`);
   }
 
-  await markProcessed(idempotencyKey);
+  await markProcessed(sessionId, idempotencyKey);
   return true;
 };
 
@@ -184,7 +184,7 @@ const handlePaymentFailed = async (event: PaymentFailedEvent) => {
   const sagaId = event.correlationId;
   const sessionId = event.sessionId;
   const idempotencyKey = `inventory:release:${orderId}`;
-  const processed = await hasProcessed(idempotencyKey);
+  const processed = await hasProcessed(sessionId, idempotencyKey);
 
   // Idempotency check: skip if already processed
   if (processed) {
@@ -205,7 +205,7 @@ const handlePaymentFailed = async (event: PaymentFailedEvent) => {
     console.log(`[saga:${sagaId}] No reservation found to release for order ${orderId}`);
   }
 
-  await markProcessed(idempotencyKey);
+  await markProcessed(sessionId, idempotencyKey);
   return true;
 };
 
@@ -214,7 +214,7 @@ const handlePaymentSuccess = async (event: PaymentSuccessEvent) => {
   const sagaId = event.correlationId;
   const sessionId = event.sessionId;
   const idempotencyKey = `inventory:confirm:${orderId}`;
-  const processed = await hasProcessed(idempotencyKey);
+  const processed = await hasProcessed(sessionId, idempotencyKey);
 
   // Idempotency check: skip if already processed
   if (processed) {
@@ -233,6 +233,6 @@ const handlePaymentSuccess = async (event: PaymentSuccessEvent) => {
     console.log(`[saga:${sagaId}] No reservation found to confirm for order ${orderId}`);
   }
 
-  await markProcessed(idempotencyKey);
+  await markProcessed(sessionId, idempotencyKey);
   return true;
 };

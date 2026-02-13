@@ -122,5 +122,5 @@ export const updatePaymentStatus = async (
  */
 export const resetPayments = async (sessionId: string): Promise<void> => {
   await pool.query(`DELETE FROM payments WHERE session_id = $1`, [sessionId]);
-  await pool.query(`DELETE FROM processed_events`);
+  await pool.query(`DELETE FROM processed_events WHERE session_id = $1`, [sessionId]);
 };

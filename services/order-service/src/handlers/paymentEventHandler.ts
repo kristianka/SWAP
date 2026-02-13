@@ -14,8 +14,9 @@ type OrderUpdateEvent = PaymentSuccessEvent | PaymentFailedEvent | InventoryFail
 export const handlePaymentEvent = async (event: OrderUpdateEvent) => {
   const orderId = event.data.orderId;
   const sagaId = event.correlationId;
+  const sessionId = event.sessionId;
   const idempotencyKey = `order-update:${orderId}:${event.type}`;
-  const processed = await hasProcessed(idempotencyKey);
+  const processed = await hasProcessed(sessionId, idempotencyKey);
 
   // Idempotency check - skip if already processed
   if (processed) {
@@ -41,7 +42,7 @@ export const handlePaymentEvent = async (event: OrderUpdateEvent) => {
   }
 
   // Mark as processed after successful handling
-  await markProcessed(idempotencyKey);
+  await markProcessed(sessionId, idempotencyKey);
 };
 
 const handlePaymentSuccess = async (event: PaymentSuccessEvent) => {

@@ -9,7 +9,7 @@ export const handleInventoryReserved = async (event: InventoryReservedEvent) => 
   const sagaId = event.correlationId;
   const sessionId = event.sessionId;
   const idempotencyKey = `payment:${orderId}`;
-  const processed = await hasProcessed(idempotencyKey);
+  const processed = await hasProcessed(sessionId, idempotencyKey);
 
   // Idempotency check, prevent duplicate payment processing
   if (processed) {
@@ -74,7 +74,7 @@ export const handleInventoryReserved = async (event: InventoryReservedEvent) => 
     );
 
     // Mark as processed after successful handling
-    await markProcessed(idempotencyKey);
+    await markProcessed(sessionId, idempotencyKey);
   } catch (error) {
     console.error(`[saga:${sagaId}] Payment failed for order ${orderId}!`, error);
 
@@ -106,6 +106,6 @@ export const handleInventoryReserved = async (event: InventoryReservedEvent) => 
     );
 
     // Mark as processed even on failure to prevent retry loops
-    await markProcessed(idempotencyKey);
+    await markProcessed(sessionId, idempotencyKey);
   }
 };

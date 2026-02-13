@@ -98,5 +98,5 @@ export const updateOrderStatus = async (
  */
 export const resetOrders = async (sessionId: string): Promise<void> => {
   await pool.query(`DELETE FROM orders WHERE session_id = $1`, [sessionId]);
-  await pool.query(`DELETE FROM processed_events`);
+  await pool.query(`DELETE FROM processed_events WHERE session_id = $1`, [sessionId]);
 };
