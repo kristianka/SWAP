@@ -57,7 +57,8 @@ export const OrderTable = ({ orders, lastRefreshed }: OrderTableProps) => {
               </TableRow>
             ) : (
               displayedOrders.map((order) => {
-                const isProcessing = order.status === OrderStatus.PENDING;
+                const isProcessing =
+                  order.status === OrderStatus.PENDING || order.status === OrderStatus.PROCESSING;
                 return (
                   <TableRow key={order.id}>
                     <TableCell className="font-mono text-xs">{order.id}</TableCell>
