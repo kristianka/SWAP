@@ -3,6 +3,7 @@ import type {
   OrderEventType,
   InventoryEventType,
   PaymentEventType,
+  PaymentStatus,
 } from "./constants";
 
 // ===========================================
@@ -99,7 +100,7 @@ export interface Payment {
   id: string;
   order_id: string;
   amount: number;
-  status: string;
+  status: PaymentStatus;
 }
 
 export type PaymentEvent = PaymentSuccessEvent | PaymentFailedEvent;

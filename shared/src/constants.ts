@@ -35,6 +35,12 @@ export enum PaymentEventType {
   PAYMENT_FAILED = "PAYMENT_FAILED",
 }
 
+export enum PaymentStatus {
+  PENDING = "PENDING",
+  SUCCESS = "SUCCESS",
+  FAILED = "FAILED",
+}
+
 // ===========================================
 // Queue Names (message broker routing)
 // ===========================================

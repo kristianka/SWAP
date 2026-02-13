@@ -1,7 +1,8 @@
 import type { InventoryReservedEvent, PaymentSuccessEvent, PaymentFailedEvent } from "@swap/shared";
-import { PaymentEventType, QUEUES } from "@swap/shared";
+import { PaymentEventType, PaymentStatus, QUEUES } from "@swap/shared";
 import { getChannel } from "../rabbitmq";
 import { hasProcessed, markProcessed } from "../storage/idempotencyStorage";
+import { addPayment, updatePaymentStatus } from "../storage/paymentStorage";
 
 export const handleInventoryReserved = async (event: InventoryReservedEvent) => {
   const { orderId, items, failTransaction } = event.data;
@@ -17,8 +18,21 @@ export const handleInventoryReserved = async (event: InventoryReservedEvent) => 
 
   console.log(`[saga:${sagaId}] Processing payment for order ${orderId}...`);
 
-  // Simulate payment processing
-  await new Promise((resolve) => setTimeout(resolve, 3000));
+  // Calculate amount upfront for both success and failure cases
+  const amount = items.reduce((sum, item) => sum + item.quantity * 10, 0); // Mock price calculation
+
+  // Create payment record with PENDING status immediately for visual feedback
+  const transactionId = `txn_${Bun.randomUUIDv7()}`;
+  await addPayment({
+    id: transactionId,
+    order_id: orderId,
+    amount,
+    status: PaymentStatus.PENDING,
+  });
+  console.log(`[saga:${sagaId}] Payment created with PENDING status for order ${orderId}`);
+
+  // Simulate payment processing (increased for demo effect)
+  await new Promise((resolve) => setTimeout(resolve, 5000));
 
   try {
     // Check if we should intentionally fail for testing
@@ -28,8 +42,8 @@ export const handleInventoryReserved = async (event: InventoryReservedEvent) => 
 
     const channel = getChannel();
     // no real payment logic, just mock success
-    const amount = items.reduce((sum, item) => sum + item.quantity * 10, 0); // Mock price calculation
-    const transactionId = `txn_${Bun.randomUUIDv7()}`;
+    // Update payment status to SUCCESS
+    await updatePaymentStatus(transactionId, PaymentStatus.SUCCESS);
 
     console.log(`[saga:${sagaId}] Payment successful for order ${orderId}: $${amount}`);
 
@@ -59,6 +73,9 @@ export const handleInventoryReserved = async (event: InventoryReservedEvent) => 
     await markProcessed(idempotencyKey);
   } catch (error) {
     console.error(`[saga:${sagaId}] Payment failed for order ${orderId}!`, error);
+
+    // Update payment status to FAILED
+    await updatePaymentStatus(transactionId, PaymentStatus.FAILED);
 
     // Publish PAYMENT_FAILED event
     const paymentFailedEvent: PaymentFailedEvent = {

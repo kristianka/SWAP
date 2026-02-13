@@ -50,7 +50,7 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
   const items = event.data.items;
 
   // Artificial delay to simulate processing (makes the saga observable)
-  await new Promise((resolve) => setTimeout(resolve, 1500));
+  await new Promise((resolve) => setTimeout(resolve, 3000));
 
   // Attempt to reserve inventory
   const result = await reserveItems(orderId, items);
