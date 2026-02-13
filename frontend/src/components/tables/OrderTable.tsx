@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { OrderStatus, type Order } from "@swap/shared";
-import { CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { type Order } from "@swap/shared";
+import { AlertCircle } from "lucide-react";
 import { Card, CardContent } from "../ui/card";
 import {
   Table,
@@ -11,8 +11,7 @@ import {
   TableBody,
   TableCell,
 } from "../ui/table";
-import { Badge } from "../ui/badge";
-import { Spinner } from "../ui/spinner";
+import { StatusBadge } from "../ui/StatusBadge";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 
 interface OrderTableProps {
@@ -40,7 +39,7 @@ export const OrderTable = ({ orders, lastRefreshed }: OrderTableProps) => {
           </TableCaption>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[200px]">ID</TableHead>
+              <TableHead className="w-50">ID</TableHead>
               <TableHead>Items</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Error</TableHead>
@@ -66,33 +65,7 @@ export const OrderTable = ({ orders, lastRefreshed }: OrderTableProps) => {
                     ))}
                   </TableCell>
                   <TableCell>
-                    <Badge
-                      variant={
-                        order.status === OrderStatus.COMPLETED
-                          ? "default"
-                          : order.status === OrderStatus.CANCELLED
-                            ? "destructive"
-                            : order.status === OrderStatus.PROCESSING
-                              ? "secondary"
-                              : "outline"
-                      }
-                      className={
-                        order.status === OrderStatus.COMPLETED
-                          ? "bg-green-600 hover:bg-green-600/80"
-                          : ""
-                      }
-                    >
-                      {order.status === OrderStatus.PROCESSING && (
-                        <Spinner className="mr-1 size-3" />
-                      )}
-                      {order.status === OrderStatus.COMPLETED && (
-                        <CheckCircle2 className="mr-1 size-3" />
-                      )}
-                      {order.status === OrderStatus.CANCELLED && (
-                        <XCircle className="mr-1 size-3" />
-                      )}
-                      {order.status}
-                    </Badge>
+                    <StatusBadge status={order.status} />
                   </TableCell>
                   <TableCell>
                     {order.errorMessage ? (
@@ -106,8 +79,8 @@ export const OrderTable = ({ orders, lastRefreshed }: OrderTableProps) => {
                             onMouseEnter={() => setOpenErrorPopover(order.id)}
                             onMouseLeave={() => setOpenErrorPopover(null)}
                           >
-                            <AlertCircle className="size-4 text-red-600 flex-shrink-0" />
-                            <span className="text-red-600 text-sm truncate max-w-[120px]">
+                            <AlertCircle className="size-4 text-red-600 shrink-0" />
+                            <span className="text-red-600 text-sm truncate max-w-30">
                               {order.errorMessage.length > 40
                                 ? order.errorMessage.slice(0, 40) + "..."
                                 : order.errorMessage}
@@ -121,7 +94,7 @@ export const OrderTable = ({ orders, lastRefreshed }: OrderTableProps) => {
                         >
                           <div className="space-y-2">
                             <h4 className="font-semibold text-red-600">Error Details</h4>
-                            <p className="text-sm text-gray-300 break-words">
+                            <p className="text-sm text-gray-300 wrap-break-word">
                               {order.errorMessage}
                             </p>
                           </div>

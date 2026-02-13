@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
+import { StatusBadge } from "../ui/StatusBadge";
 
 interface PaymentTableProps {
   payments: Payment[];
@@ -16,6 +17,9 @@ interface PaymentTableProps {
 }
 
 export const PaymentTable = ({ payments, lastRefreshed }: PaymentTableProps) => {
+  // only first three
+  const displayedPayments = payments.slice(0, 3);
+
   return (
     <Card>
       <CardContent>
@@ -30,7 +34,7 @@ export const PaymentTable = ({ payments, lastRefreshed }: PaymentTableProps) => 
           </TableCaption>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[200px]">ID</TableHead>
+              <TableHead className="w-50">ID</TableHead>
               <TableHead>Order ID</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Amount</TableHead>
@@ -44,24 +48,14 @@ export const PaymentTable = ({ payments, lastRefreshed }: PaymentTableProps) => 
                 </TableCell>
               </TableRow>
             ) : (
-              payments.map((payment) => (
+              displayedPayments.map((payment) => (
                 <TableRow key={payment.id}>
                   <TableCell className="font-mono text-xs">{payment.id}</TableCell>
                   <TableCell className="font-mono text-xs">{payment.order_id}</TableCell>
                   <TableCell>
-                    <span
-                      className={
-                        payment.status === "SUCCESS" || payment.status === "success"
-                          ? "text-green-600"
-                          : payment.status === "FAILED" || payment.status === "failed"
-                            ? "text-red-600"
-                            : "text-yellow-600"
-                      }
-                    >
-                      {payment.status}
-                    </span>
+                    <StatusBadge status={payment.status} />
                   </TableCell>
-                  <TableCell className="text-right">${payment.amount.toFixed(2)}</TableCell>
+                  <TableCell className="text-right">${payment.amount}</TableCell>
                 </TableRow>
               ))
             )}
