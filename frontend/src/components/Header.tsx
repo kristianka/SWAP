@@ -7,6 +7,8 @@ interface HeaderProps {
   successMessage: string | null;
   errorMessage: string | null;
   fetchAllData: () => void;
+  sessionId: string;
+  onRegenerateSession: () => void;
 }
 
 export const Header = ({
@@ -14,6 +16,8 @@ export const Header = ({
   successMessage,
   errorMessage,
   fetchAllData,
+  sessionId,
+  onRegenerateSession,
 }: HeaderProps) => {
   return (
     <div>
@@ -35,10 +39,27 @@ export const Header = ({
           )}
         </div>
         <div className="text-right">
-          <Button variant="outline" onClick={fetchAllData}>
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2 text-xs text-gray-400">
+              <span>
+                Session ID: <span className="font-mono">{sessionId}</span>
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onRegenerateSession}
+                className="h-6 px-2"
+                title="Generate new session ID"
+              >
+                <RefreshCw className="h-3 w-3" />
+              </Button>
+            </div>
+            <div className="h-8 w-px bg-gray-600"></div>
+            <Button variant="outline" onClick={fetchAllData}>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Refresh tables
+            </Button>
+          </div>
           {lastRefreshed && (
             <div className="mt-2">
               <p className="text-xs text-gray-400">(Auto-refreshes every 10 seconds)</p>
