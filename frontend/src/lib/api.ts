@@ -34,10 +34,71 @@ export interface ApiResponse<T> {
   error: string | null;
 }
 
+// Session management
+const SESSION_KEY = "swap-demo-session-id";
+const SESSION_SEEDED_KEY = "swap-demo-session-seeded";
+
+// Auto-seed inventory for new sessions
+const autoSeedInventory = async (sessionId: string): Promise<void> => {
+  try {
+    const response = await fetch(`${API_BASE_URLS.inventory}/inventory/seed`, {
+      method: "POST",
+      headers: {
+        "x-session-id": sessionId,
+      },
+    });
+    if (response.ok) {
+      console.log("Inventory automatically seeded for session:", sessionId);
+      localStorage.setItem(SESSION_SEEDED_KEY, sessionId);
+    } else {
+      console.error("Failed to auto-seed inventory:", response.statusText);
+    }
+  } catch (error) {
+    console.error("Failed to auto-seed inventory:", error);
+  }
+};
+
+export const getOrCreateSessionId = (): string => {
+  let sessionId = localStorage.getItem(SESSION_KEY);
+  const seededSessionId = localStorage.getItem(SESSION_SEEDED_KEY);
+
+  if (!sessionId) {
+    sessionId = crypto.randomUUID();
+    localStorage.setItem(SESSION_KEY, sessionId);
+    // Auto-seed for new session
+    autoSeedInventory(sessionId);
+  } else if (sessionId !== seededSessionId) {
+    // Session exists but hasn't been seeded yet
+    autoSeedInventory(sessionId);
+  }
+
+  return sessionId;
+};
+
+export const regenerateSessionId = async (): Promise<string> => {
+  const sessionId = crypto.randomUUID();
+  localStorage.setItem(SESSION_KEY, sessionId);
+  // Clear seeded flag to trigger auto-seed
+  localStorage.removeItem(SESSION_SEEDED_KEY);
+  // Auto-seed the new session
+  await autoSeedInventory(sessionId);
+  return sessionId;
+};
+
+// Helper to get headers with session ID
+const getHeaders = (additionalHeaders?: Record<string, string>) => {
+  return {
+    "x-session-id": getOrCreateSessionId(),
+    ...additionalHeaders,
+  };
+};
+
 export const api = {
   async fetchOrders(): Promise<ApiResponse<Order[]>> {
     try {
-      const res = await fetch(`${API_BASE_URLS.orders}/orders`);
+      const res = await fetch(`${API_BASE_URLS.orders}/orders`, {
+        headers: getHeaders(),
+      });
       if (res.ok) {
         return { data: await res.json(), error: null };
       }
@@ -51,7 +112,9 @@ export const api = {
 
   async fetchInventory(): Promise<ApiResponse<InventoryItem[]>> {
     try {
-      const res = await fetch(`${API_BASE_URLS.inventory}/inventory`);
+      const res = await fetch(`${API_BASE_URLS.inventory}/inventory`, {
+        headers: getHeaders(),
+      });
       if (res.ok) {
         return { data: await res.json(), error: null };
       }
@@ -65,7 +128,9 @@ export const api = {
 
   async fetchPayments(): Promise<ApiResponse<Payment[]>> {
     try {
-      const res = await fetch(`${API_BASE_URLS.payments}/payments`);
+      const res = await fetch(`${API_BASE_URLS.payments}/payments`, {
+        headers: getHeaders(),
+      });
       if (res.ok) {
         return { data: await res.json(), error: null };
       }
@@ -85,9 +150,9 @@ export const api = {
     try {
       const response = await fetch(`${API_BASE_URLS.orders}/orders`, {
         method: "POST",
-        headers: {
+        headers: getHeaders({
           "Content-Type": "application/json",
-        },
+        }),
         body: JSON.stringify({ items }),
       });
 

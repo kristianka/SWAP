@@ -24,6 +24,16 @@ export const Header = ({
             Distributed transaction management with RabbitMQ and the Saga pattern
           </p>
         </div>
+
+        <div className="hidden md:block">
+          {successMessage && (
+            <Alert className="" variant="default">
+              <CheckCircle2 className="w-4 h-4 mr-2" />
+              <AlertTitle>Success</AlertTitle>
+              <AlertDescription>{successMessage}</AlertDescription>
+            </Alert>
+          )}
+        </div>
         <div className="text-right">
           <Button variant="outline" onClick={fetchAllData}>
             <RefreshCw className="w-4 h-4 mr-2" />
@@ -46,13 +56,15 @@ export const Header = ({
           <AlertDescription>{errorMessage}</AlertDescription>
         </Alert>
       )}
-      {/* {successMessage && (
-        <Alert className="my-6" variant="default">
-          <CheckCircle2 className="w-4 h-4 mr-2" />
-          <AlertTitle>Success</AlertTitle>
-          <AlertDescription>{successMessage}</AlertDescription>
-        </Alert>
-      )} */}
+      <div className="block sm:hidden">
+        {successMessage && (
+          <Alert className="my-6" variant="default">
+            <CheckCircle2 className="w-4 h-4 mr-2" />
+            <AlertTitle>Success</AlertTitle>
+            <AlertDescription>{successMessage}</AlertDescription>
+          </Alert>
+        )}
+      </div>
     </div>
   );
 };
