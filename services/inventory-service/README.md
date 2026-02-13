@@ -64,6 +64,7 @@ The inventory service maintains three tables:
 ### Session Isolation
 
 All data tables include `session_id` column:
+
 - Composite primary keys ensure data isolation between sessions
 - All queries filter by `session_id` from request headers
 - Each session maintains independent inventory and reservations
