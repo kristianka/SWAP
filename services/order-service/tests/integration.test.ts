@@ -3,6 +3,7 @@ import type { Order } from "@swap/shared/types";
 import { describe, test, expect, beforeAll } from "bun:test";
 import {
   ORDER_SERVICE_URL,
+  TEST_SESSION_ID,
   checkServicesHealth,
   resetAllServices,
   waitForOrderStatus,
@@ -20,7 +21,10 @@ describe("Microservices Integration Tests", () => {
       // Create order
       const createResponse = await fetch(`${ORDER_SERVICE_URL}/orders`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-session-id": TEST_SESSION_ID,
+        },
         body: JSON.stringify({
           items: [
             { product: "laptop", quantity: 1 },
@@ -42,7 +46,9 @@ describe("Microservices Integration Tests", () => {
       expect(finalStatus).toBe(OrderStatus.COMPLETED);
 
       // Verify final order state
-      const finalResponse = await fetch(`${ORDER_SERVICE_URL}/orders/${order.id}`);
+      const finalResponse = await fetch(`${ORDER_SERVICE_URL}/orders/${order.id}`, {
+        headers: { "x-session-id": TEST_SESSION_ID },
+      });
       const finalOrder = (await finalResponse.json()) as Order;
 
       expect(finalOrder.status).toBe(OrderStatus.COMPLETED);
@@ -54,14 +60,20 @@ describe("Microservices Integration Tests", () => {
       const [order1Response, order2Response] = await Promise.all([
         fetch(`${ORDER_SERVICE_URL}/orders`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "x-session-id": TEST_SESSION_ID,
+          },
           body: JSON.stringify({
             items: [{ product: "keyboard", quantity: 1 }],
           }),
         }),
         fetch(`${ORDER_SERVICE_URL}/orders`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "x-session-id": TEST_SESSION_ID,
+          },
           body: JSON.stringify({
             items: [{ product: "monitor", quantity: 2 }],
           }),
@@ -91,7 +103,10 @@ describe("Microservices Integration Tests", () => {
     test("should create and retrieve order by ID", async () => {
       const createResponse = await fetch(`${ORDER_SERVICE_URL}/orders`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-session-id": TEST_SESSION_ID,
+        },
         body: JSON.stringify({
           items: [{ product: "test-product", quantity: 5 }],
         }),
@@ -101,7 +116,9 @@ describe("Microservices Integration Tests", () => {
       const orderId = order.id;
 
       // Get order by ID
-      const getResponse = await fetch(`${ORDER_SERVICE_URL}/orders/${orderId}`);
+      const getResponse = await fetch(`${ORDER_SERVICE_URL}/orders/${orderId}`, {
+        headers: { "x-session-id": TEST_SESSION_ID },
+      });
       expect(getResponse.ok).toBe(true);
 
       const retrievedOrder = (await getResponse.json()) as Order;
@@ -111,12 +128,16 @@ describe("Microservices Integration Tests", () => {
     }, 15000);
 
     test("should return 404 for non-existent order", async () => {
-      const response = await fetch(`${ORDER_SERVICE_URL}/orders/non-existent-id`);
+      const response = await fetch(`${ORDER_SERVICE_URL}/orders/non-existent-id`, {
+        headers: { "x-session-id": TEST_SESSION_ID },
+      });
       expect(response.status).toBe(404);
     });
 
     test("should list all orders", async () => {
-      const response = await fetch(`${ORDER_SERVICE_URL}/orders`);
+      const response = await fetch(`${ORDER_SERVICE_URL}/orders`, {
+        headers: { "x-session-id": TEST_SESSION_ID },
+      });
       expect(response.ok).toBe(true);
 
       const orders = (await response.json()) as Order[];
@@ -126,7 +147,10 @@ describe("Microservices Integration Tests", () => {
     test("should reject order with empty items", async () => {
       const response = await fetch(`${ORDER_SERVICE_URL}/orders`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-session-id": TEST_SESSION_ID,
+        },
         body: JSON.stringify({ items: [] }),
       });
 
@@ -138,7 +162,10 @@ describe("Microservices Integration Tests", () => {
     test("should transition from PENDING to COMPLETED (choreography pattern)", async () => {
       const createResponse = await fetch(`${ORDER_SERVICE_URL}/orders`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-session-id": TEST_SESSION_ID,
+        },
         body: JSON.stringify({
           items: [{ product: "keyboard", quantity: 1 }],
         }),
@@ -154,7 +181,9 @@ describe("Microservices Integration Tests", () => {
       expect(finalStatus).toBe(OrderStatus.COMPLETED);
 
       // Verify order went directly from PENDING to COMPLETED
-      const finalResponse = await fetch(`${ORDER_SERVICE_URL}/orders/${orderId}`);
+      const finalResponse = await fetch(`${ORDER_SERVICE_URL}/orders/${orderId}`, {
+        headers: { "x-session-id": TEST_SESSION_ID },
+      });
       const finalOrder = (await finalResponse.json()) as Order;
       expect(finalOrder.status).toBe(OrderStatus.COMPLETED);
     }, 20000);

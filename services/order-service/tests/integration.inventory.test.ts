@@ -4,6 +4,7 @@ import { describe, test, expect, beforeAll } from "bun:test";
 import {
   ORDER_SERVICE_URL,
   INVENTORY_SERVICE_URL,
+  TEST_SESSION_ID,
   checkServicesHealth,
   resetAllServices,
   waitForOrderStatus,
@@ -19,14 +20,19 @@ describe("Inventory Integration Tests", () => {
   describe("Inventory Reservation Flow", () => {
     test("should reserve inventory and complete order when stock is available", async () => {
       // Get initial inventory state
-      const initialInventory = await fetch(`${INVENTORY_SERVICE_URL}/inventory`);
+      const initialInventory = await fetch(`${INVENTORY_SERVICE_URL}/inventory`, {
+        headers: { "x-session-id": TEST_SESSION_ID },
+      });
       const initialProducts = (await initialInventory.json()) as any[];
       const laptop = initialProducts.find((p) => p.id === "laptop");
 
       // Create an order for products that exist in inventory
       const createResponse = await fetch(`${ORDER_SERVICE_URL}/orders`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-session-id": TEST_SESSION_ID,
+        },
         body: JSON.stringify({
           items: [
             { product: "laptop", quantity: 1 },
@@ -44,7 +50,9 @@ describe("Inventory Integration Tests", () => {
       expect(finalStatus).toBe(OrderStatus.COMPLETED);
 
       // Verify inventory was deducted
-      const finalInventory = await fetch(`${INVENTORY_SERVICE_URL}/inventory`);
+      const finalInventory = await fetch(`${INVENTORY_SERVICE_URL}/inventory`, {
+        headers: { "x-session-id": TEST_SESSION_ID },
+      });
       const finalProducts = (await finalInventory.json()) as any[];
       const finalLaptop = finalProducts.find((p) => p.id === "laptop");
 
@@ -56,7 +64,10 @@ describe("Inventory Integration Tests", () => {
       // Create an order for excessive quantity
       const createResponse = await fetch(`${ORDER_SERVICE_URL}/orders`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-session-id": TEST_SESSION_ID,
+        },
         body: JSON.stringify({
           items: [{ product: "laptop", quantity: 999 }], // Way more than available :D
         }),
@@ -75,7 +86,10 @@ describe("Inventory Integration Tests", () => {
       // Create an order for a non-existent product
       const createResponse = await fetch(`${ORDER_SERVICE_URL}/orders`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-session-id": TEST_SESSION_ID,
+        },
         body: JSON.stringify({
           items: [{ product: "nonexistent-product-xyz", quantity: 1 }],
         }),
@@ -92,7 +106,9 @@ describe("Inventory Integration Tests", () => {
 
     test("should release inventory when payment fails", async () => {
       // Get initial inventory state
-      const initialInventory = await fetch(`${INVENTORY_SERVICE_URL}/inventory`);
+      const initialInventory = await fetch(`${INVENTORY_SERVICE_URL}/inventory`, {
+        headers: { "x-session-id": TEST_SESSION_ID },
+      });
       const initialProducts = (await initialInventory.json()) as any[];
       const monitor = initialProducts.find((p) => p.id === "monitor");
       const initialStock = monitor?.stock_level ?? 0;
@@ -100,7 +116,10 @@ describe("Inventory Integration Tests", () => {
       // Create an order that will fail at payment (inventory will be reserved then released)
       const createResponse = await fetch(`${ORDER_SERVICE_URL}/orders`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-session-id": TEST_SESSION_ID,
+        },
         body: JSON.stringify({
           items: [{ product: "monitor", quantity: 1 }],
           paymentBehaviour: "failure",
@@ -117,7 +136,9 @@ describe("Inventory Integration Tests", () => {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Verify inventory was released (stock should be unchanged)
-      const finalInventory = await fetch(`${INVENTORY_SERVICE_URL}/inventory`);
+      const finalInventory = await fetch(`${INVENTORY_SERVICE_URL}/inventory`, {
+        headers: { "x-session-id": TEST_SESSION_ID },
+      });
       const finalProducts = (await finalInventory.json()) as any[];
       const finalMonitor = finalProducts.find((p) => p.id === "monitor");
 
@@ -129,7 +150,9 @@ describe("Inventory Integration Tests", () => {
 
   describe("Inventory Stats", () => {
     test("should return inventory statistics", async () => {
-      const statsResponse = await fetch(`${INVENTORY_SERVICE_URL}/inventory/stats`);
+      const statsResponse = await fetch(`${INVENTORY_SERVICE_URL}/inventory/stats`, {
+        headers: { "x-session-id": TEST_SESSION_ID },
+      });
       expect(statsResponse.ok).toBe(true);
 
       const stats = (await statsResponse.json()) as {
@@ -147,6 +170,7 @@ describe("Inventory Integration Tests", () => {
     test("should seed inventory with default products", async () => {
       const seedResponse = await fetch(`${INVENTORY_SERVICE_URL}/inventory/seed`, {
         method: "POST",
+        headers: { "x-session-id": TEST_SESSION_ID },
       });
 
       expect(seedResponse.ok).toBe(true);
