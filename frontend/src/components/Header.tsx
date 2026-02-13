@@ -21,7 +21,7 @@ export const Header = ({
 }: HeaderProps) => {
   return (
     <div>
-      <div className="mb-8 flex items-start justify-between">
+      <div className="mb-8 flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold mb-2">Software Architecture Project</h1>
           <p className="text-gray-400">
@@ -38,8 +38,8 @@ export const Header = ({
             </Alert>
           )}
         </div>
-        <div className="text-right">
-          <div className="flex items-center gap-6">
+        <div className="md:text-right">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6">
             <div className="flex items-center gap-2 text-xs text-gray-400">
               <span>
                 Session ID: <span className="font-mono">{sessionId}</span>
@@ -54,8 +54,8 @@ export const Header = ({
                 <RefreshCw className="h-3 w-3" />
               </Button>
             </div>
-            <div className="h-8 w-px bg-gray-600"></div>
-            <Button variant="outline" onClick={fetchAllData}>
+            <div className="h-8 w-px bg-gray-600 hidden md:block"></div>
+            <Button className="w-full sm:w-auto" variant="outline" onClick={fetchAllData}>
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh tables
             </Button>
