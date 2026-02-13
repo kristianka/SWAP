@@ -17,7 +17,7 @@ The frontend implements session-based isolation for multi-user demo environments
 
 - Automatically generated UUID on first visit
 - Stored in browser localStorage (`swap-demo-session-id`)
-- Displayed below the order table
+- Displayed in the header at the top-right of the page
 - Included in all API requests via `x-session-id` header
 
 ### Session Controls
