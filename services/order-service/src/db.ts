@@ -24,15 +24,37 @@ export const initDatabase = async (): Promise<void> => {
     // Create orders table (current state)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS orders (
-        id TEXT PRIMARY KEY,
+        id TEXT,
+        session_id TEXT NOT NULL,
         saga_id TEXT NOT NULL,
         items JSONB NOT NULL,
         status TEXT NOT NULL,
         error_message TEXT,
         created_at TIMESTAMP NOT NULL,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        version INTEGER NOT NULL DEFAULT 1
+        version INTEGER NOT NULL DEFAULT 1,
+        PRIMARY KEY (id, session_id)
       )
+    `);
+
+    // Add session_id column if it doesn't exist (migration)
+    await pool.query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'orders' AND column_name = 'session_id'
+        ) THEN
+          ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_pkey;
+          ALTER TABLE orders ADD COLUMN session_id TEXT NOT NULL DEFAULT 'default';
+          ALTER TABLE orders ADD PRIMARY KEY (id, session_id);
+        END IF;
+      END $$;
+    `);
+
+    // Create index on session_id for efficient queries
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_orders_session ON orders(session_id);
     `);
 
     // Add saga_id column if it doesn't exist (migration)

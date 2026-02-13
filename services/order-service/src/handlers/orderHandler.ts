@@ -14,6 +14,12 @@ export const createOrderHandler = async (
   reply: FastifyReply,
 ) => {
   const { items, failTransaction } = req.body;
+  const sessionId = req.headers["x-session-id"] as string;
+
+  if (!sessionId) {
+    reply.status(400);
+    throw new Error("Missing x-session-id header");
+  }
 
   // TODO: Add more and proper validation, like sanitize inputs
   if (!items || items.length === 0) {
@@ -27,6 +33,7 @@ export const createOrderHandler = async (
   const order: Order = {
     id: orderId,
     sagaId,
+    sessionId,
     items,
     status: OrderStatus.PENDING,
     createdAt: new Date().toISOString(),
@@ -39,6 +46,7 @@ export const createOrderHandler = async (
   const event: OrderEvent = {
     type: OrderEventType.ORDER_CREATED,
     correlationId: sagaId,
+    sessionId,
     timestamp: new Date().toISOString(),
     data: order,
   };
