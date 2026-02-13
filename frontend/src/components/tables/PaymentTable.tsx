@@ -36,10 +36,10 @@ export const PaymentTable = ({ payments, lastRefreshed }: PaymentTableProps) => 
           </TableCaption>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-50">ID</TableHead>
+              <TableHead className="w-70">ID</TableHead>
+              <TableHead>Processing</TableHead>
               <TableHead>Order ID</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Processing</TableHead>
               <TableHead className="text-right">Amount</TableHead>
               <TableHead>Created At</TableHead>
             </TableRow>
@@ -57,16 +57,16 @@ export const PaymentTable = ({ payments, lastRefreshed }: PaymentTableProps) => 
                 return (
                   <TableRow key={payment.id}>
                     <TableCell className="font-mono text-xs">{payment.id}</TableCell>
-                    <TableCell className="font-mono text-xs">{payment.order_id}</TableCell>
-                    <TableCell>
-                      <StatusBadge status={payment.status} />
-                    </TableCell>
                     <TableCell>
                       {isProcessing ? (
                         <Spinner className="text-blue-500" />
                       ) : (
                         <span className="text-gray-400">—</span>
                       )}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">{payment.order_id}</TableCell>
+                    <TableCell>
+                      <StatusBadge status={payment.status} />
                     </TableCell>
                     <TableCell className="text-right">${payment.amount}</TableCell>
                     <TableCell className="text-xs text-gray-400">

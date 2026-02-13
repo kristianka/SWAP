@@ -40,10 +40,10 @@ export const OrderTable = ({ orders, lastRefreshed }: OrderTableProps) => {
           </TableCaption>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-50">ID</TableHead>
-              <TableHead>Items</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead className="w-70">ID</TableHead>
               <TableHead>Processing</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Items</TableHead>
               <TableHead>Error</TableHead>
               <TableHead>Created At</TableHead>
             </TableRow>
@@ -62,21 +62,23 @@ export const OrderTable = ({ orders, lastRefreshed }: OrderTableProps) => {
                   <TableRow key={order.id}>
                     <TableCell className="font-mono text-xs">{order.id}</TableCell>
                     <TableCell>
-                      {order.items.map((item, i) => (
-                        <div key={i}>
-                          {item.product} x{item.quantity}
-                        </div>
-                      ))}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={order.status} />
-                    </TableCell>
-                    <TableCell>
                       {isProcessing ? (
                         <Spinner className="text-green-500" />
                       ) : (
                         <span className="text-gray-400">—</span>
                       )}
+                    </TableCell>
+
+                    <TableCell>
+                      <StatusBadge status={order.status} />
+                    </TableCell>
+
+                    <TableCell>
+                      {order.items.map((item, i) => (
+                        <div key={i}>
+                          {item.product} x{item.quantity}
+                        </div>
+                      ))}
                     </TableCell>
                     <TableCell>
                       {order.errorMessage ? (
@@ -91,9 +93,9 @@ export const OrderTable = ({ orders, lastRefreshed }: OrderTableProps) => {
                               onMouseLeave={() => setOpenErrorPopover(null)}
                             >
                               <AlertCircle className="size-4 text-red-600 shrink-0" />
-                              <span className="text-red-600 text-sm truncate max-w-30">
-                                {order.errorMessage.length > 40
-                                  ? order.errorMessage.slice(0, 40) + "..."
+                              <span className="text-red-600 text-sm truncate max-w-60">
+                                {order.errorMessage.length > 60
+                                  ? order.errorMessage.slice(0, 60) + "..."
                                   : order.errorMessage}
                               </span>
                             </div>
@@ -105,7 +107,7 @@ export const OrderTable = ({ orders, lastRefreshed }: OrderTableProps) => {
                           >
                             <div className="space-y-2">
                               <h4 className="font-semibold text-red-600">Error Details</h4>
-                              <p className="text-sm text-gray-300 wrap-break-word">
+                              <p className="text-sm text-gray-300 break-words">
                                 {order.errorMessage}
                               </p>
                             </div>

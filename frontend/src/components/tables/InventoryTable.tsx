@@ -31,12 +31,12 @@ export const InventoryTable = ({ inventory, lastRefreshed }: InventoryTable) => 
           </TableCaption>
           <TableHeader>
             <TableRow>
-              <TableHead>ID</TableHead>
+              <TableHead className="w-70">ID</TableHead>
+              <TableHead>Processing</TableHead>
               <TableHead>Name</TableHead>
               <TableHead className="text-right">Stock Level</TableHead>
               <TableHead className="text-right">Reserved</TableHead>
               <TableHead className="text-right">Available</TableHead>
-              <TableHead>Processing</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -52,10 +52,6 @@ export const InventoryTable = ({ inventory, lastRefreshed }: InventoryTable) => 
                 return (
                   <TableRow key={item.id}>
                     <TableCell className="font-mono text-xs">{item.id}</TableCell>
-                    <TableCell>{item.name}</TableCell>
-                    <TableCell className="text-right">{item.stock_level}</TableCell>
-                    <TableCell className="text-right">{item.reserved}</TableCell>
-                    <TableCell className="text-right">{item.available}</TableCell>
                     <TableCell>
                       {isProcessing ? (
                         <Spinner className="text-yellow-500" />
@@ -63,6 +59,10 @@ export const InventoryTable = ({ inventory, lastRefreshed }: InventoryTable) => 
                         <span className="text-gray-400">—</span>
                       )}
                     </TableCell>
+                    <TableCell>{item.name}</TableCell>
+                    <TableCell className="text-right">{item.stock_level}</TableCell>
+                    <TableCell className="text-right">{item.reserved}</TableCell>
+                    <TableCell className="text-right">{item.available}</TableCell>
                   </TableRow>
                 );
               })
