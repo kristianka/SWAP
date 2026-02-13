@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Input } from "./ui/input";
-import { ShoppingCart, Plus, Minus, Trash2 } from "lucide-react";
+import { ShoppingCart, Plus, Minus, Trash2, Info } from "lucide-react";
 import { Spinner } from "./ui/spinner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 import { api, type InventoryItem } from "../lib/api";
+import { BehaviourSelect } from "./BehaviourSelect";
 
 interface SelectedItem {
   product: string;
@@ -24,7 +26,10 @@ export const OrderCreationCard = ({ onOrderCreated, onSuccess }: OrderCreationCa
   const [loading, setLoading] = useState(false);
   const [polling, setPolling] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [paymentBehavior, setPaymentBehavior] = useState<"success" | "failure" | "random">(
+  const [inventoryBehaviour, setInventoryBehaviour] = useState<"success" | "failure" | "random">(
+    "success",
+  );
+  const [paymentBehaviour, setPaymentBehaviour] = useState<"success" | "failure" | "random">(
     "success",
   );
 
@@ -97,7 +102,7 @@ export const OrderCreationCard = ({ onOrderCreated, onSuccess }: OrderCreationCa
       quantity,
     }));
 
-    const response = await api.createOrder(items, paymentBehavior);
+    const response = await api.createOrder(items, paymentBehaviour, inventoryBehaviour);
 
     if (response.error) {
       setError(response.error);
@@ -208,22 +213,23 @@ export const OrderCreationCard = ({ onOrderCreated, onSuccess }: OrderCreationCa
 
         <div className="border-t border-gray-700 pt-4">
           <h3 className="text-sm font-semibold mb-3">Demo Options</h3>
-          <div className="flex items-center space-x-3">
-            <label className="text-sm text-gray-300 whitespace-nowrap">Payment behavior:</label>
-            <select
-              value={paymentBehavior}
-              onChange={(e) =>
-                setPaymentBehavior(e.target.value as "success" | "failure" | "random")
-              }
-              className="ml-auto h-8 rounded-lg border border-gray-700 bg-card px-3 py-1 text-sm text-white hover:border-gray-600  focus:outline-none focus:ring-1  [&>option]:bg-card [&>option]:text-white"
-            >
-              <option value="success">Always success</option>
-              <option value="failure">Always fails</option>
-              <option value="random">Random</option>
-            </select>
-          </div>
+          <TooltipProvider>
+            <div className="space-y-3">
+              <BehaviourSelect
+                label="Inventory behaviour"
+                value={inventoryBehaviour}
+                onChange={setInventoryBehaviour}
+                tooltip="In real world, inventory may fail if stock is updated during processing"
+              />
+              <BehaviourSelect
+                label="Payment behaviour"
+                value={paymentBehaviour}
+                onChange={setPaymentBehaviour}
+                tooltip="In real world, payment may fail if credit card details are incorrect or insufficient funds"
+              />
+            </div>
+          </TooltipProvider>
         </div>
-
         {/* Error Message */}
         {error && (
           <div className="p-3 rounded-lg bg-red-500/10 border border-red-500 text-red-500 text-sm">

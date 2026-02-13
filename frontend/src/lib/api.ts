@@ -148,7 +148,8 @@ export const api = {
 
   async createOrder(
     items: { product: string; quantity: number }[],
-    paymentBehavior?: "success" | "failure" | "random",
+    paymentBehaviour?: "success" | "failure" | "random",
+    inventoryBehaviour?: "success" | "failure" | "random",
   ): Promise<ApiResponse<Order>> {
     try {
       const response = await fetch(`${API_BASE_URLS.orders}/orders`, {
@@ -156,7 +157,7 @@ export const api = {
         headers: getHeaders({
           "Content-Type": "application/json",
         }),
-        body: JSON.stringify({ items, paymentBehavior }),
+        body: JSON.stringify({ items, paymentBehaviour, inventoryBehaviour }),
       });
 
       if (response.ok) {

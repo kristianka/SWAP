@@ -1,4 +1,5 @@
 import type { InventoryItem } from "@swap/shared";
+import { InventoryStatus } from "@swap/shared";
 import { Card, CardContent } from "../ui/card";
 import {
   Table,
@@ -10,6 +11,7 @@ import {
   TableCell,
 } from "../ui/table";
 import { Spinner } from "../ui/spinner";
+import { StatusBadge } from "../ui/StatusBadge";
 
 interface InventoryTable {
   inventory: InventoryItem[];
@@ -32,7 +34,8 @@ export const InventoryTable = ({ inventory, lastRefreshed }: InventoryTable) => 
           <TableHeader>
             <TableRow>
               <TableHead className="w-70">ID</TableHead>
-              <TableHead>Processing</TableHead>
+              <TableHead className="w-40">Processing</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead>Name</TableHead>
               <TableHead className="text-right">Stock Level</TableHead>
               <TableHead className="text-right">Reserved</TableHead>
@@ -42,13 +45,15 @@ export const InventoryTable = ({ inventory, lastRefreshed }: InventoryTable) => 
           <TableBody>
             {inventory.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center">
+                <TableCell colSpan={7} className="text-center">
                   No inventory items found
                 </TableCell>
               </TableRow>
             ) : (
               inventory.map((item) => {
-                const isProcessing = item.reserved > 0;
+                const isProcessing =
+                  item.reservationStatus === InventoryStatus.RESERVING ||
+                  item.reservationStatus === InventoryStatus.RESERVED;
                 return (
                   <TableRow key={item.id}>
                     <TableCell className="font-mono text-xs">{item.id}</TableCell>
@@ -58,6 +63,9 @@ export const InventoryTable = ({ inventory, lastRefreshed }: InventoryTable) => 
                       ) : (
                         <span className="text-gray-400">—</span>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={item.reservationStatus} />
                     </TableCell>
                     <TableCell>{item.name}</TableCell>
                     <TableCell className="text-right">{item.stock_level}</TableCell>

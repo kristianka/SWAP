@@ -37,9 +37,9 @@ export const PaymentTable = ({ payments, lastRefreshed }: PaymentTableProps) => 
           <TableHeader>
             <TableRow>
               <TableHead className="w-70">ID</TableHead>
-              <TableHead>Processing</TableHead>
-              <TableHead>Order ID</TableHead>
+              <TableHead className="w-40">Processing</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Order ID</TableHead>
               <TableHead className="text-right">Amount</TableHead>
               <TableHead>Created At</TableHead>
             </TableRow>
@@ -64,12 +64,13 @@ export const PaymentTable = ({ payments, lastRefreshed }: PaymentTableProps) => 
                         <span className="text-gray-400">—</span>
                       )}
                     </TableCell>
-                    <TableCell className="font-mono text-xs">{payment.order_id}</TableCell>
                     <TableCell>
                       <StatusBadge status={payment.status} />
                     </TableCell>
+
+                    <TableCell className="font-mono text-xs">{payment.order_id}</TableCell>
                     <TableCell className="text-right">${payment.amount}</TableCell>
-                    <TableCell className="text-xs text-gray-400">
+                    <TableCell className="">
                       {new Date(payment.created_at).toLocaleString()}
                     </TableCell>
                   </TableRow>
