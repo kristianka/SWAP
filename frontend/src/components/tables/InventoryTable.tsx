@@ -9,6 +9,7 @@ import {
   TableBody,
   TableCell,
 } from "../ui/table";
+import { Spinner } from "../ui/spinner";
 
 interface InventoryTable {
   inventory: InventoryItem[];
@@ -35,25 +36,36 @@ export const InventoryTable = ({ inventory, lastRefreshed }: InventoryTable) => 
               <TableHead className="text-right">Stock Level</TableHead>
               <TableHead className="text-right">Reserved</TableHead>
               <TableHead className="text-right">Available</TableHead>
+              <TableHead>Processing</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {inventory.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center">
+                <TableCell colSpan={6} className="text-center">
                   No inventory items found
                 </TableCell>
               </TableRow>
             ) : (
-              inventory.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-mono text-xs">{item.id}</TableCell>
-                  <TableCell>{item.name}</TableCell>
-                  <TableCell className="text-right">{item.stock_level}</TableCell>
-                  <TableCell className="text-right">{item.reserved}</TableCell>
-                  <TableCell className="text-right">{item.available}</TableCell>
-                </TableRow>
-              ))
+              inventory.map((item) => {
+                const isProcessing = item.reserved > 0;
+                return (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-mono text-xs">{item.id}</TableCell>
+                    <TableCell>{item.name}</TableCell>
+                    <TableCell className="text-right">{item.stock_level}</TableCell>
+                    <TableCell className="text-right">{item.reserved}</TableCell>
+                    <TableCell className="text-right">{item.available}</TableCell>
+                    <TableCell>
+                      {isProcessing ? (
+                        <Spinner className="text-yellow-500" />
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>

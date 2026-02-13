@@ -101,6 +101,7 @@ export interface Payment {
   order_id: string;
   amount: number;
   status: PaymentStatus;
+  created_at: string;
 }
 
 export type PaymentEvent = PaymentSuccessEvent | PaymentFailedEvent;

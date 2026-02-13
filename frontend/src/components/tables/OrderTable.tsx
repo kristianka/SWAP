@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { type Order } from "@swap/shared";
+import { type Order, OrderStatus } from "@swap/shared";
 import { AlertCircle } from "lucide-react";
 import { Card, CardContent } from "../ui/card";
 import {
@@ -13,6 +13,7 @@ import {
 } from "../ui/table";
 import { StatusBadge } from "../ui/StatusBadge";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { Spinner } from "../ui/spinner";
 
 interface OrderTableProps {
   orders: Order[];
@@ -42,6 +43,7 @@ export const OrderTable = ({ orders, lastRefreshed }: OrderTableProps) => {
               <TableHead className="w-50">ID</TableHead>
               <TableHead>Items</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Processing</TableHead>
               <TableHead>Error</TableHead>
               <TableHead>Created At</TableHead>
             </TableRow>
@@ -49,64 +51,74 @@ export const OrderTable = ({ orders, lastRefreshed }: OrderTableProps) => {
           <TableBody>
             {displayedOrders.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center">
+                <TableCell colSpan={6} className="text-center">
                   No orders found
                 </TableCell>
               </TableRow>
             ) : (
-              displayedOrders.map((order) => (
-                <TableRow key={order.id}>
-                  <TableCell className="font-mono text-xs">{order.id}</TableCell>
-                  <TableCell>
-                    {order.items.map((item, i) => (
-                      <div key={i}>
-                        {item.product} x{item.quantity}
-                      </div>
-                    ))}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={order.status} />
-                  </TableCell>
-                  <TableCell>
-                    {order.errorMessage ? (
-                      <Popover
-                        open={openErrorPopover === order.id}
-                        onOpenChange={(open) => !open && setOpenErrorPopover(null)}
-                      >
-                        <PopoverTrigger asChild>
-                          <div
-                            className="flex items-center gap-2 cursor-pointer"
+              displayedOrders.map((order) => {
+                const isProcessing = order.status === OrderStatus.PENDING;
+                return (
+                  <TableRow key={order.id}>
+                    <TableCell className="font-mono text-xs">{order.id}</TableCell>
+                    <TableCell>
+                      {order.items.map((item, i) => (
+                        <div key={i}>
+                          {item.product} x{item.quantity}
+                        </div>
+                      ))}
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={order.status} />
+                    </TableCell>
+                    <TableCell>
+                      {isProcessing ? (
+                        <Spinner className="text-green-500" />
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {order.errorMessage ? (
+                        <Popover
+                          open={openErrorPopover === order.id}
+                          onOpenChange={(open) => !open && setOpenErrorPopover(null)}
+                        >
+                          <PopoverTrigger asChild>
+                            <div
+                              className="flex items-center gap-2 cursor-pointer"
+                              onMouseEnter={() => setOpenErrorPopover(order.id)}
+                              onMouseLeave={() => setOpenErrorPopover(null)}
+                            >
+                              <AlertCircle className="size-4 text-red-600 shrink-0" />
+                              <span className="text-red-600 text-sm truncate max-w-30">
+                                {order.errorMessage.length > 40
+                                  ? order.errorMessage.slice(0, 40) + "..."
+                                  : order.errorMessage}
+                              </span>
+                            </div>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            className="w-80"
                             onMouseEnter={() => setOpenErrorPopover(order.id)}
                             onMouseLeave={() => setOpenErrorPopover(null)}
                           >
-                            <AlertCircle className="size-4 text-red-600 shrink-0" />
-                            <span className="text-red-600 text-sm truncate max-w-30">
-                              {order.errorMessage.length > 40
-                                ? order.errorMessage.slice(0, 40) + "..."
-                                : order.errorMessage}
-                            </span>
-                          </div>
-                        </PopoverTrigger>
-                        <PopoverContent
-                          className="w-80"
-                          onMouseEnter={() => setOpenErrorPopover(order.id)}
-                          onMouseLeave={() => setOpenErrorPopover(null)}
-                        >
-                          <div className="space-y-2">
-                            <h4 className="font-semibold text-red-600">Error Details</h4>
-                            <p className="text-sm text-gray-300 wrap-break-word">
-                              {order.errorMessage}
-                            </p>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    ) : (
-                      <span className="text-gray-400">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell>{new Date(order.createdAt).toLocaleString()}</TableCell>
-                </TableRow>
-              ))
+                            <div className="space-y-2">
+                              <h4 className="font-semibold text-red-600">Error Details</h4>
+                              <p className="text-sm text-gray-300 wrap-break-word">
+                                {order.errorMessage}
+                              </p>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>{new Date(order.createdAt).toLocaleString()}</TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>

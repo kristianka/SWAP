@@ -22,6 +22,7 @@ export const OrderCreationCard = ({ onOrderCreated, onSuccess }: OrderCreationCa
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [polling, setPolling] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchInventory = async () => {
@@ -102,6 +103,18 @@ export const OrderCreationCard = ({ onOrderCreated, onSuccess }: OrderCreationCa
       setSelectedItems([]);
       onOrderCreated();
       fetchInventory(); // Refresh inventory to show updated available counts
+
+      // Start polling every 500ms for 10 seconds
+      setPolling(true);
+      const intervalId = setInterval(() => {
+        onOrderCreated();
+      }, 500);
+
+      // Stop polling after 10 seconds
+      setTimeout(() => {
+        clearInterval(intervalId);
+        setPolling(false);
+      }, 10000);
     }
 
     setLoading(false);
@@ -202,7 +215,7 @@ export const OrderCreationCard = ({ onOrderCreated, onSuccess }: OrderCreationCa
           {selectedItems.length > 0 && (
             <Button
               onClick={() => setSelectedItems([])}
-              disabled={loading}
+              disabled={loading || polling}
               variant="outline"
               size="lg"
             >
@@ -212,7 +225,7 @@ export const OrderCreationCard = ({ onOrderCreated, onSuccess }: OrderCreationCa
           )}
           <Button
             onClick={createOrder}
-            disabled={loading || selectedItems.length === 0}
+            disabled={loading || polling || selectedItems.length === 0}
             className="flex-1"
             size="lg"
           >
@@ -220,6 +233,11 @@ export const OrderCreationCard = ({ onOrderCreated, onSuccess }: OrderCreationCa
               <>
                 <Spinner className="mr-2" />
                 Creating Order...
+              </>
+            ) : polling ? (
+              <>
+                <Spinner className="mr-2" />
+                Polling...
               </>
             ) : (
               <>

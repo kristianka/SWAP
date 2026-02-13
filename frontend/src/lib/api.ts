@@ -1,4 +1,5 @@
 import type { Order } from "@swap/shared";
+import { PaymentStatus } from "@swap/shared";
 
 // Database-specific interfaces (not in shared types as they're storage implementation details)
 export interface InventoryItem {
@@ -16,7 +17,7 @@ export interface Payment {
   id: string;
   order_id: string;
   amount: number;
-  status: string;
+  status: PaymentStatus;
   created_at: string;
   updated_at: string;
   version: number;
