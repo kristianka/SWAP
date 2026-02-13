@@ -10,7 +10,7 @@ Event-driven microservices architecture using **RabbitMQ** as the message broker
 
 - **Order Service** - Orchestrates order lifecycle and maintains order state
 - **Inventory Service** - Manages inventory reservations and releases
-- **Payment Service** - Processes payments and handles transactions
+- **Payment Service** - Processes payments and persists transaction records
 
 ### RabbitMQ Queues
 
