@@ -1,6 +1,6 @@
 # order-service
 
-Orchestrates the order saga, managing order lifecycle and coordinating between inventory and payment services.
+Manages order lifecycle and participates in the choreographed saga pattern alongside inventory and payment services.
 
 ## Install & Run
 
@@ -58,28 +58,29 @@ The order service maintains two tables:
 - Session ID propagates through entire saga via event correlation
 - Each user session maintains independent order history
 
-## Saga Orchestration
+## Saga Choreography
 
-The order service acts as the saga coordinator, managing the distributed transaction flow:
+The system uses choreography-based saga pattern where each service autonomously reacts to events:
 
 1. **Order Creation** → Emit ORDER_CREATED event
    - Creates order with status "PENDING"
    - Assigns unique saga ID for end-to-end tracing
-   - Triggers inventory reservation
+   - Inventory service reacts by attempting reservation
 
-2. **INVENTORY_RESERVED** → Triggers payment processing
-   - Payment service processes payment (5s mock delay)
+2. **INVENTORY_RESERVED** → Payment processing
+   - Payment service reacts to successful reservation
+   - Processes payment (5s mock delay)
 
 3. **PAYMENT_SUCCESS** → Order completion
-   - Updates order status to "COMPLETED"
-   - Inventory confirms reservation (final stock deduction)
+   - Order service reacts by updating status to "COMPLETED"
+   - Inventory service reacts by confirming reservation (final stock deduction)
 
 4. **PAYMENT_FAILED** → Compensating transaction
-   - Updates order status to "CANCELLED"
-   - Inventory releases reservation (rollback)
+   - Order service reacts by updating status to "CANCELLED"
+   - Inventory service reacts by releasing reservation (rollback)
 
 5. **INVENTORY_FAILED** → Order cancellation
-   - Updates order status to "CANCELLED"
+   - Order service reacts by updating status to "CANCELLED"
    - No payment attempted (early failure)
 
 ## Order Timeout

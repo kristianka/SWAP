@@ -4,21 +4,34 @@ Software Architecture Project 2026 - University of Helsinki
 
 ## Architecture
 
-Event-driven microservices architecture using **RabbitMQ** as the message broker.
+Event-driven microservices architecture using **RabbitMQ** for choreography-based saga pattern.
+
+### Choreography vs Orchestration
+
+This system implements **choreography** where:
+
+- No central coordinator - each service autonomously decides when to act
+- Services react to events and publish new events based on their domain logic
+- Saga flow emerges from service interactions rather than being explicitly directed
+- Each service knows its responsibility and reacts independently
+
+This differs from **orchestration** where a central service would direct each step of the transaction.
+
+**Trade-off:** The workflow is implicit (no single place to see the full flow) but services are fully decoupled and can evolve independently.
 
 ### Services
 
-- **Order Service** - Orchestrates order lifecycle and maintains order state
+- **Order Service** - Manages order lifecycle and maintains order state
 - **Inventory Service** - Manages inventory reservations and releases
 - **Payment Service** - Processes payments and persists transaction records
 
 ### RabbitMQ Queues
 
-| Queue              | Constant                  | Events                                                                |
-| ------------------ | ------------------------- | --------------------------------------------------------------------- |
-| `order-events`     | `QUEUES.ORDER_EVENTS`     | `OrderEventType.ORDER_CREATED`                                        |
-| `inventory-events` | `QUEUES.INVENTORY_EVENTS` | `InventoryEventType.INVENTORY_RESERVED`                               |
-| `payment-events`   | `QUEUES.PAYMENT_EVENTS`   | `PaymentEventType.PAYMENT_SUCCESS`, `PaymentEventType.PAYMENT_FAILED` |
+| Queue              | Constant                  | Events                                                                                                       | Consumers                        |
+| ------------------ | ------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------- |
+| `order-events`     | `QUEUES.ORDER_EVENTS`     | `OrderEventType.ORDER_CREATED`, `PaymentEventType.PAYMENT_SUCCESS`                                           | Inventory Service                |
+| `inventory-events` | `QUEUES.INVENTORY_EVENTS` | `InventoryEventType.INVENTORY_RESERVED`, `InventoryEventType.INVENTORY_FAILED`                               | Payment Service                  |
+| `payment-events`   | `QUEUES.PAYMENT_EVENTS`   | `PaymentEventType.PAYMENT_SUCCESS`, `PaymentEventType.PAYMENT_FAILED`, `InventoryEventType.INVENTORY_FAILED` | Order Service, Inventory Service |
 
 ## Flow
 
@@ -39,12 +52,12 @@ Event-driven microservices architecture using **RabbitMQ** as the message broker
 
         RabbitMQ->>InventoryService: Consume ORDER_CREATED
         InventoryService->>InventoryService: Check & Reserve Inventory
-        Note over InventoryService: 1.5s processing
+        Note over InventoryService: 3s processing
         InventoryService->>RabbitMQ: INVENTORY_RESERVED → QUEUES.INVENTORY_EVENTS
 
         RabbitMQ->>PaymentService: Consume INVENTORY_RESERVED
         PaymentService->>PaymentService: Process Payment
-        Note over PaymentService: 3s processing
+        Note over PaymentService: 5s processing
         PaymentService->>RabbitMQ: PAYMENT_SUCCESS → QUEUES.PAYMENT_EVENTS
 
         RabbitMQ->>OrderService: Consume PAYMENT_SUCCESS
@@ -71,11 +84,11 @@ Event-driven microservices architecture using **RabbitMQ** as the message broker
 
 ## Testing
 
-This project has automated testing made with Bun, which are run automatically in Pull Requests, or manually by `bun run test`
+This project has automated testing made with Bun, which are run automatically in Pull Requests, or manually by `bun run test`. If you want to test manually, I recommend testing via the UI as it gives the best overview of the system.
 
 ### Happy path
 
-Happy path (=successful) path is the scenario when everything goes fine: user creates an order, there's inventory and payment succeeds. See instructions in `services/order-service` how to run.
+Happy path (=successful) is the scenario when everything goes fine: user creates an order, there's inventory and payment succeeds. See instructions in `services/order-service` how to run.
 
 ### Failure Scenarios
 
@@ -83,22 +96,28 @@ Happy path (=successful) path is the scenario when everything goes fine: user cr
 
 To test payment behavior, pass `paymentBehaviour` in the order creation request:
 
-```json
-{
-  "items": [
-    {
-      "product": "laptop",
-      "quantity": 1
-    }
-  ],
-  "paymentBehaviour": "failure"
-}
+```bash
+curl -X POST http://localhost:3001/orders \
+  -H "Content-Type: application/json" \
+  -H "x-session-id: your-session-id" \
+  -d '{
+    "items": [
+      {
+        "product": "laptop",
+        "quantity": 1
+      }
+    ],
+    "paymentBehaviour": "failure"
+  }'
 ```
 
-**Payment Behaviour Options:**
-- `"success"` - Payment succeeds (default if omitted)
-- `"failure"` - Payment intentionally fails for testing
+**Behaviour Options:**
+
+- `"success"` - Operation succeeds (default if omitted)
+- `"failure"` - Operation intentionally fails for testing
 - `"random"` - 50% chance to succeed or fail
+
+You can set both `paymentBehaviour` and `inventoryBehaviour` independently to test different failure scenarios.
 
 When payment fails:
 
@@ -110,24 +129,42 @@ When payment fails:
 
 #### Inventory Failure
 
-To test the inventory failure path, order a product that doesn't exist or request more than available:
+To test the inventory failure path, you can either:
+
+1. **Force failure with behaviour flag:**
 
 ```bash
-# Non-existent product
 curl -X POST http://localhost:3001/orders \
   -H "Content-Type: application/json" \
-  -d '{"items": [{"product": "non-existent", "quantity": 1}]}'
+  -H "x-session-id: your-session-id" \
+  -d '{
+    "items": [{"product": "laptop", "quantity": 1}],
+    "inventoryBehaviour": "failure"
+  }'
+```
 
-# Excessive quantity
+2. **Order non-existent product:**
+
+```bash
 curl -X POST http://localhost:3001/orders \
   -H "Content-Type: application/json" \
+  -H "x-session-id: your-session-id" \
+  -d '{"items": [{"product": "non-existent", "quantity": 1}]}'
+```
+
+3. **Order excessive quantity:**
+
+```bash
+curl -X POST http://localhost:3001/orders \
+  -H "Content-Type: application/json" \
+  -H "x-session-id: your-session-id" \
   -d '{"items": [{"product": "laptop", "quantity": 999}]}'
 ```
 
 When inventory check fails:
 
 1. Order is created in PENDING status
-2. Inventory check fails (product not found or insufficient stock)
+2. Inventory check fails (product not found, insufficient stock, or forced failure)
 3. INVENTORY_FAILED event is published
 4. Order status is updated to CANCELLED
 5. No payment is attempted
@@ -137,7 +174,7 @@ When inventory check fails:
 Before testing, seed the inventory with initial stock:
 
 ```bash
-curl -X POST http://localhost:3002/inventory/seed
+curl -X POST -H "x-session-id: your-session-id" http://localhost:3002/inventory/seed
 ```
 
 ## Running
@@ -160,22 +197,16 @@ We use **session-based data isolation** to support multiple concurrent users in 
 
 **Session Display & Regeneration:**
 
-- Session ID displayed below the order table
-- Click the refresh button (🔄) to generate a new session
-- New session starts with empty data - requires seeding inventory
-
-**Seed Inventory:**
-
-- "Seed Inventory" button populates products for your session
-- Creates default products: Gaming Laptop (5), Wireless Mouse (67), Mechanical Keyboard (21), 4K Monitor (15)
-- Each session maintains independent inventory levels
+- Session ID shown in the UI
+- Click the refresh button to generate a new session
+- Sessions seeded automatically
 
 ### Implementation Details
 
 **Database Schema:**
 
 - Composite primary keys: `(id, session_id)` on products, orders, payments, reservations
-- Indexed on `session_id` for query performance
+- Indexed on `session_id` for query performance!
 - Migration-safe: existing data gets `session_id = 'default'`
 
 **Backend Changes:**
@@ -190,3 +221,5 @@ We use **session-based data isolation** to support multiple concurrent users in 
 - Types are shared via `@swap/shared` package
 - Monorepo structure for ease of development
 - All services use idempotency keys for message deduplication
+- Mock delays simulate real-world processing times
+- New sessions start with fresh data for isolated testing
