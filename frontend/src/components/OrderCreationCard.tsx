@@ -24,6 +24,9 @@ export const OrderCreationCard = ({ onOrderCreated, onSuccess }: OrderCreationCa
   const [loading, setLoading] = useState(false);
   const [polling, setPolling] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [paymentBehavior, setPaymentBehavior] = useState<"success" | "failure" | "random">(
+    "success",
+  );
 
   const fetchInventory = async () => {
     const response = await api.fetchInventory();
@@ -94,7 +97,7 @@ export const OrderCreationCard = ({ onOrderCreated, onSuccess }: OrderCreationCa
       quantity,
     }));
 
-    const response = await api.createOrder(items);
+    const response = await api.createOrder(items, paymentBehavior);
 
     if (response.error) {
       setError(response.error);
@@ -200,6 +203,24 @@ export const OrderCreationCard = ({ onOrderCreated, onSuccess }: OrderCreationCa
                 );
               })
             )}
+          </div>
+        </div>
+
+        <div className="border-t border-gray-700 pt-4">
+          <h3 className="text-sm font-semibold mb-3">Demo Options</h3>
+          <div className="flex items-center space-x-3">
+            <label className="text-sm text-gray-300 whitespace-nowrap">Payment behavior:</label>
+            <select
+              value={paymentBehavior}
+              onChange={(e) =>
+                setPaymentBehavior(e.target.value as "success" | "failure" | "random")
+              }
+              className="ml-auto h-8 rounded-lg border border-gray-700 bg-card px-3 py-1 text-sm text-white hover:border-gray-600  focus:outline-none focus:ring-1  [&>option]:bg-card [&>option]:text-white"
+            >
+              <option value="success">Always success</option>
+              <option value="failure">Always fails</option>
+              <option value="random">Random</option>
+            </select>
           </div>
         </div>
 

@@ -146,14 +146,17 @@ export const api = {
     return Promise.all([this.fetchOrders(), this.fetchInventory(), this.fetchPayments()]);
   },
 
-  async createOrder(items: { product: string; quantity: number }[]): Promise<ApiResponse<Order>> {
+  async createOrder(
+    items: { product: string; quantity: number }[],
+    paymentBehavior?: "success" | "failure" | "random",
+  ): Promise<ApiResponse<Order>> {
     try {
       const response = await fetch(`${API_BASE_URLS.orders}/orders`, {
         method: "POST",
         headers: getHeaders({
           "Content-Type": "application/json",
         }),
-        body: JSON.stringify({ items }),
+        body: JSON.stringify({ items, paymentBehavior }),
       });
 
       if (response.ok) {
