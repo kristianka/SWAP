@@ -52,5 +52,5 @@ Currently uses mock payment logic:
 
 - Calculates amount: `quantity * $10` per item
 - Generates unique transaction ID: `txn_<uuid>`
-- Simulates couple second processing delay
+- Simulates 5 second processing delay
 - All transactions are persisted to the database for audit trail
