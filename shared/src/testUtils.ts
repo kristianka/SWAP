@@ -3,7 +3,7 @@
  */
 
 import { OrderStatus, PaymentStatus } from "./constants";
-import type { Order } from "./types";
+import type { InventoryItem, Order, Payment } from "./types";
 
 // Service URLs
 export const ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL || "http://localhost:3001";
@@ -104,7 +104,7 @@ export const waitForPaymentStatus = async (
     const response = await fetch(`${PAYMENT_SERVICE_URL}/payments`, {
       headers: { "x-session-id": sessionId },
     });
-    const payments = (await response.json()) as any[];
+    const payments = (await response.json()) as Payment[];
     const payment = payments.find((p) => p.order_id === orderId);
 
     if (payment && payment.status === expectedStatus) {
@@ -121,7 +121,12 @@ export const getPaymentByOrderId = async (sessionId: string, orderId: string) =>
   const response = await fetch(`${PAYMENT_SERVICE_URL}/payments`, {
     headers: { "x-session-id": sessionId },
   });
-  const payments = (await response.json()) as any[];
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch payments: ${response.statusText}`);
+  }
+
+  const payments = (await response.json()) as Payment[];
   return payments.find((p) => p.order_id === orderId);
 };
 
@@ -129,17 +134,36 @@ export const getInventory = async (sessionId: string) => {
   const response = await fetch(`${INVENTORY_SERVICE_URL}/inventory`, {
     headers: { "x-session-id": sessionId },
   });
-  return (await response.json()) as any[];
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch inventory: ${response.statusText}`);
+  }
+
+  return (await response.json()) as InventoryItem[];
 };
 
 export const getInventoryStats = async (sessionId: string) => {
   const response = await fetch(`${INVENTORY_SERVICE_URL}/inventory/stats`, {
     headers: { "x-session-id": sessionId },
   });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch inventory stats: ${response.statusText}`);
+  }
+
   return await response.json();
 };
 
 export const getProduct = async (sessionId: string, productId: string) => {
   const inventory = await getInventory(sessionId);
-  return inventory.find((p) => p.id === productId);
+  if (!inventory || inventory.length === 0) {
+    throw new Error("Inventory is empty");
+  }
+
+  const product = inventory.find((p) => p.id === productId);
+  if (!product) {
+    throw new Error(`Product with ID ${productId} not found`);
+  }
+
+  return product;
 };
