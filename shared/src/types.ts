@@ -110,7 +110,7 @@ export interface Payment {
   order_id: string;
   amount: number;
   status: PaymentStatus;
-  created_at?: string;
+  created_at: string;
   updated_at?: string;
   version?: number;
 }
