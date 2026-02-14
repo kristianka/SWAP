@@ -205,7 +205,11 @@ curl -X POST -H "x-session-id: your-session-id" http://localhost:3002/inventory/
 
 ## Running
 
-See individual service folders for instructions.
+### Setup
+
+- Copy `.env.example` to `.env` files in root, frontend and all service folders
+- See individual service folders for install and development run instructions.
+- Or just run `docker compose up` after setting up environment values.
 
 ## Session Isolation
 
