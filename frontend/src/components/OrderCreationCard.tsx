@@ -2,12 +2,14 @@ import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Input } from "./ui/input";
-import { ShoppingCart, Plus, Minus, Trash2 } from "lucide-react";
+import { ShoppingCart, Plus, Minus, Trash2, Info } from "lucide-react";
 import { Spinner } from "./ui/spinner";
-import { TooltipProvider } from "./ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 import { type InventoryItem } from "@swap/shared";
 import { api } from "../lib/api";
 import { BehaviourSelect } from "./BehaviourSelect";
+import { Checkbox } from "./ui/checkbox";
+import { Label } from "./ui/label";
 
 interface SelectedItem {
   product: string;
@@ -27,12 +29,15 @@ export const OrderCreationCard = ({ onOrderCreated, onSuccess }: OrderCreationCa
   const [loading, setLoading] = useState(false);
   const [polling, setPolling] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // demo test options
   const [inventoryBehaviour, setInventoryBehaviour] = useState<"success" | "failure" | "random">(
     "success",
   );
   const [paymentBehaviour, setPaymentBehaviour] = useState<"success" | "failure" | "random">(
     "success",
   );
+  const [skipDemoDelays, setSkipDemoDelays] = useState(false);
 
   const fetchInventory = async () => {
     const response = await api.fetchInventory();
@@ -103,7 +108,12 @@ export const OrderCreationCard = ({ onOrderCreated, onSuccess }: OrderCreationCa
       quantity,
     }));
 
-    const response = await api.createOrder(items, paymentBehaviour, inventoryBehaviour);
+    const response = await api.createOrder(
+      items,
+      paymentBehaviour,
+      inventoryBehaviour,
+      skipDemoDelays,
+    );
 
     if (response.error) {
       setError(response.error);
@@ -228,6 +238,29 @@ export const OrderCreationCard = ({ onOrderCreated, onSuccess }: OrderCreationCa
                 onChange={setPaymentBehaviour}
                 tooltip="In real world, payment may fail if credit card details are incorrect or insufficient funds"
               />
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="skip-delays"
+                  checked={skipDemoDelays}
+                  onCheckedChange={(checked) => setSkipDemoDelays(checked === true)}
+                />
+
+                <Label htmlFor="skip-delays" className="cursor-pointer font-normal text-gray-300">
+                  Skip demo delays (for faster testing)
+                </Label>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="size-3.5 text-gray-400 hover:text-gray-300 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p>
+                      Skips the artificial delays. Use this if you want to quickly test different
+                      scenarios without waiting for the full processing time.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
             </div>
           </TooltipProvider>
         </div>
