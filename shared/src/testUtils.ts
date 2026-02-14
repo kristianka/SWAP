@@ -127,7 +127,13 @@ export const getPaymentByOrderId = async (sessionId: string, orderId: string) =>
   }
 
   const payments = (await response.json()) as Payment[];
-  return payments.find((p) => p.order_id === orderId);
+  const payment = payments.find((p) => p.order_id === orderId);
+
+  if (!payment) {
+    throw new Error(`Payment for order ID ${orderId} not found`);
+  }
+
+  return payment;
 };
 
 export const getInventory = async (sessionId: string) => {

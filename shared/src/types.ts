@@ -106,10 +106,13 @@ export interface PaymentFailedEvent extends BaseEvent {
 
 export interface Payment {
   id: string;
+  session_id?: string;
   order_id: string;
   amount: number;
   status: PaymentStatus;
-  created_at: string;
+  created_at?: string;
+  updated_at?: string;
+  version?: number;
 }
 
 export type PaymentEvent = PaymentSuccessEvent | PaymentFailedEvent;

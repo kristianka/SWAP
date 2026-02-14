@@ -1,16 +1,5 @@
 import { pool } from "../db";
-import { PaymentStatus } from "@swap/shared";
-
-export interface Payment {
-  id: string;
-  session_id?: string;
-  order_id: string;
-  amount: number;
-  status: PaymentStatus;
-  created_at?: string;
-  updated_at?: string;
-  version?: number;
-}
+import { PaymentStatus, type Payment } from "@swap/shared";
 
 /**
  * Add a new payment record
