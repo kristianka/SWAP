@@ -127,6 +127,7 @@ export const api = {
     items: { product: string; quantity: number }[],
     paymentBehaviour?: "success" | "failure" | "random",
     inventoryBehaviour?: "success" | "failure" | "random",
+    skipDemoDelays?: boolean,
   ): Promise<ApiResponse<Order>> {
     try {
       const response = await fetch(`${API_BASE_URLS.orders}/orders`, {
@@ -134,7 +135,7 @@ export const api = {
         headers: getHeaders({
           "Content-Type": "application/json",
         }),
-        body: JSON.stringify({ items, paymentBehaviour, inventoryBehaviour }),
+        body: JSON.stringify({ items, paymentBehaviour, inventoryBehaviour, skipDemoDelays }),
       });
 
       if (response.ok) {

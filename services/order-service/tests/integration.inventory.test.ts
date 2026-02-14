@@ -38,6 +38,7 @@ describe("Inventory Integration Tests", () => {
             { product: "laptop", quantity: 1 },
             { product: "mouse", quantity: 2 },
           ],
+          skipDemoDelays: true,
         }),
       });
 
@@ -70,6 +71,7 @@ describe("Inventory Integration Tests", () => {
         },
         body: JSON.stringify({
           items: [{ product: "laptop", quantity: 999 }], // Way more than available :D
+          skipDemoDelays: true,
         }),
       });
 
@@ -92,6 +94,7 @@ describe("Inventory Integration Tests", () => {
         },
         body: JSON.stringify({
           items: [{ product: "nonexistent-product-xyz", quantity: 1 }],
+          skipDemoDelays: true,
         }),
       });
 
@@ -123,6 +126,7 @@ describe("Inventory Integration Tests", () => {
         body: JSON.stringify({
           items: [{ product: "monitor", quantity: 1 }],
           paymentBehaviour: "failure",
+          skipDemoDelays: true,
         }),
       });
 

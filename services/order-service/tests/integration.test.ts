@@ -30,6 +30,7 @@ describe("Microservices Integration Tests", () => {
             { product: "laptop", quantity: 1 },
             { product: "mouse", quantity: 2 },
           ],
+          skipDemoDelays: true,
         }),
       });
 
@@ -66,6 +67,7 @@ describe("Microservices Integration Tests", () => {
           },
           body: JSON.stringify({
             items: [{ product: "keyboard", quantity: 1 }],
+            skipDemoDelays: true,
           }),
         }),
         fetch(`${ORDER_SERVICE_URL}/orders`, {
@@ -76,6 +78,7 @@ describe("Microservices Integration Tests", () => {
           },
           body: JSON.stringify({
             items: [{ product: "monitor", quantity: 2 }],
+            skipDemoDelays: true,
           }),
         }),
       ]);
@@ -109,6 +112,7 @@ describe("Microservices Integration Tests", () => {
         },
         body: JSON.stringify({
           items: [{ product: "test-product", quantity: 5 }],
+          skipDemoDelays: true,
         }),
       });
 
@@ -168,6 +172,7 @@ describe("Microservices Integration Tests", () => {
         },
         body: JSON.stringify({
           items: [{ product: "keyboard", quantity: 1 }],
+          skipDemoDelays: true,
         }),
       });
 

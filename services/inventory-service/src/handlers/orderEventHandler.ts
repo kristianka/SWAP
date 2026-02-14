@@ -58,9 +58,12 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
   console.log(`[saga:${sagaId}] Checking inventory for order ${orderId}...`);
   const items = event.data.items;
   const inventoryBehaviour = event.data.inventoryBehaviour;
+  const skipDemoDelays = event.data.skipDemoDelays;
 
   // Artificial delay to simulate processing (makes the saga observable)
-  await new Promise((resolve) => setTimeout(resolve, 3000));
+  if (!skipDemoDelays) {
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+  }
 
   // Determine if we should fail based on inventory behaviour
   if (shouldFailForBehaviour(inventoryBehaviour)) {
@@ -146,6 +149,7 @@ const handleOrderCreated = async (event: OrderCreatedEvent) => {
       items,
       paymentBehaviour: event.data.paymentBehaviour,
       inventoryBehaviour: event.data.inventoryBehaviour,
+      skipDemoDelays: event.data.skipDemoDelays,
     },
   };
 

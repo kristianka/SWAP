@@ -25,6 +25,7 @@ export interface Order {
   errorMessage?: string; // Error message when order fails
   paymentBehaviour?: "success" | "failure" | "random"; // For testing failure scenarios
   inventoryBehaviour?: "success" | "failure" | "random"; // For testing failure scenarios
+  skipDemoDelays?: boolean; // Skip artificial delays for faster processing
 }
 
 // ===========================================
@@ -54,6 +55,7 @@ export interface InventoryReservedEvent extends BaseEvent {
     items: OrderItem[];
     paymentBehaviour?: "success" | "failure" | "random";
     inventoryBehaviour?: "success" | "failure" | "random";
+    skipDemoDelays?: boolean;
   };
 }
 

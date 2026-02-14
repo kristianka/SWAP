@@ -31,6 +31,7 @@ describe("Microservices Integration Tests - Failure Scenarios", () => {
             { product: "mouse", quantity: 2 },
           ],
           paymentBehaviour: "failure",
+          skipDemoDelays: true,
         }),
       });
 
@@ -66,6 +67,7 @@ describe("Microservices Integration Tests - Failure Scenarios", () => {
         body: JSON.stringify({
           items: [{ product: "keyboard", quantity: 1 }],
           paymentBehaviour: "failure",
+          skipDemoDelays: true,
         }),
       });
 
@@ -91,6 +93,7 @@ describe("Microservices Integration Tests - Failure Scenarios", () => {
           body: JSON.stringify({
             items: [{ product: "monitor", quantity: 1 }],
             paymentBehaviour: "failure",
+            skipDemoDelays: true,
           }),
         }),
         fetch(`${ORDER_SERVICE_URL}/orders`, {
@@ -102,6 +105,7 @@ describe("Microservices Integration Tests - Failure Scenarios", () => {
           body: JSON.stringify({
             items: [{ product: "keyboard", quantity: 2 }],
             paymentBehaviour: "failure",
+            skipDemoDelays: true,
           }),
         }),
       ]);
@@ -134,6 +138,7 @@ describe("Microservices Integration Tests - Failure Scenarios", () => {
         body: JSON.stringify({
           items: [{ product: "test-failure-flow", quantity: 1 }],
           paymentBehaviour: "failure",
+          skipDemoDelays: true,
         }),
       });
 
@@ -167,6 +172,7 @@ describe("Microservices Integration Tests - Failure Scenarios", () => {
             { product: "another-item", quantity: 50 },
           ],
           paymentBehaviour: "failure",
+          skipDemoDelays: true,
         }),
       });
 
@@ -192,6 +198,7 @@ describe("Microservices Integration Tests - Failure Scenarios", () => {
         },
         body: JSON.stringify({
           items: [{ product: "mouse", quantity: 1 }],
+          skipDemoDelays: true,
         }),
       });
 
@@ -211,6 +218,7 @@ describe("Microservices Integration Tests - Failure Scenarios", () => {
         body: JSON.stringify({
           items: [{ product: "fail-item", quantity: 1 }],
           paymentBehaviour: "failure",
+          skipDemoDelays: true,
         }),
       });
 
