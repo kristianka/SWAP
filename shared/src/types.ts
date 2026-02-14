@@ -110,8 +110,8 @@ export interface Payment {
   order_id: string;
   amount: number;
   status: PaymentStatus;
-  created_at: string;
-  updated_at?: string;
+  created_at?: string; // created in db automatically
+  updated_at?: string; // updated in db automatically
   version?: number;
 }
 

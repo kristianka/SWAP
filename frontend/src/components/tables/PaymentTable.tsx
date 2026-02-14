@@ -71,7 +71,7 @@ export const PaymentTable = ({ payments, lastRefreshed }: PaymentTableProps) => 
                     <TableCell className="font-mono text-xs">{payment.order_id}</TableCell>
                     <TableCell className="text-right">${payment.amount}</TableCell>
                     <TableCell className="">
-                      {new Date(payment.created_at).toLocaleString()}
+                      {payment.created_at ? new Date(payment.created_at).toLocaleString() : "—"}
                     </TableCell>
                   </TableRow>
                 );
