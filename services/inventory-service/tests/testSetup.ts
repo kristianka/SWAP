@@ -1,12 +1,12 @@
 /**
- * Test setup for order service integration tests
+ * Test setup for inventory service integration tests
  * Re-exports shared test utilities with a consistent TEST_SESSION_ID
  */
 
 import * as testUtils from "@swap/shared/testUtils";
 
 // Test session ID for isolating test data
-export const TEST_SESSION_ID = "test-session-12345";
+export const TEST_SESSION_ID = "test-session-inventory-12345";
 
 // Re-export service URLs
 export const ORDER_SERVICE_URL = testUtils.ORDER_SERVICE_URL;
@@ -24,6 +24,14 @@ export const seedInventory = async () => {
   return testUtils.seedInventory(TEST_SESSION_ID);
 };
 
-export const waitForOrderStatus = async (orderId: string, maxWaitMs: number = 10000) => {
-  return testUtils.waitForOrderStatus(TEST_SESSION_ID, orderId, maxWaitMs);
+export const getInventory = async () => {
+  return testUtils.getInventory(TEST_SESSION_ID);
+};
+
+export const getInventoryStats = async () => {
+  return testUtils.getInventoryStats(TEST_SESSION_ID);
+};
+
+export const getProduct = async (productId: string) => {
+  return testUtils.getProduct(TEST_SESSION_ID, productId);
 };

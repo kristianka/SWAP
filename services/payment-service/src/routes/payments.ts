@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { pool } from "../db";
+import { resetPayments } from "../storage/paymentStorage";
 
 export async function registerPaymentRoutes(app: FastifyInstance) {
   app.get("/payments", async (request, reply) => {
@@ -13,5 +14,16 @@ export async function registerPaymentRoutes(app: FastifyInstance) {
       [sessionId],
     );
     return result.rows;
+  });
+
+  // Reset payments (for testing)
+  app.post("/payments/reset", async (request, reply) => {
+    const sessionId = request.headers["x-session-id"] as string;
+    if (!sessionId) {
+      reply.status(400);
+      return { error: "Missing x-session-id header" };
+    }
+    await resetPayments(sessionId);
+    return { message: "Payments reset successfully" };
   });
 }

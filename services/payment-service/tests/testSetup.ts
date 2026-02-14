@@ -1,12 +1,13 @@
 /**
- * Test setup for order service integration tests
+ * Test setup for payment service integration tests
  * Re-exports shared test utilities with a consistent TEST_SESSION_ID
  */
 
 import * as testUtils from "@swap/shared/testUtils";
+import { PaymentStatus } from "@swap/shared/constants";
 
 // Test session ID for isolating test data
-export const TEST_SESSION_ID = "test-session-12345";
+export const TEST_SESSION_ID = "test-session-payment-12345";
 
 // Re-export service URLs
 export const ORDER_SERVICE_URL = testUtils.ORDER_SERVICE_URL;
@@ -20,10 +21,14 @@ export const resetAllServices = async () => {
   return testUtils.resetAllServices(TEST_SESSION_ID);
 };
 
-export const seedInventory = async () => {
-  return testUtils.seedInventory(TEST_SESSION_ID);
+export const waitForPaymentStatus = async (
+  orderId: string,
+  expectedStatus: PaymentStatus,
+  maxWaitMs: number = 10000,
+): Promise<boolean> => {
+  return testUtils.waitForPaymentStatus(TEST_SESSION_ID, orderId, expectedStatus, maxWaitMs);
 };
 
-export const waitForOrderStatus = async (orderId: string, maxWaitMs: number = 10000) => {
-  return testUtils.waitForOrderStatus(TEST_SESSION_ID, orderId, maxWaitMs);
+export const getPaymentByOrderId = async (orderId: string) => {
+  return testUtils.getPaymentByOrderId(TEST_SESSION_ID, orderId);
 };
