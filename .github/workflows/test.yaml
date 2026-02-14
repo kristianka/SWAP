@@ -23,7 +23,7 @@ jobs:
         run: bun run typecheck
 
       - name: Start services with Docker Compose
-        run: docker compose up -d
+        run: docker compose -f "docker-compose.cicd.yml" up -d
 
       - name: Wait for RabbitMQ to be ready
         run: |

@@ -1,0 +1,114 @@
+services:
+  rabbitmq:
+    image: rabbitmq:4.2.3-management
+    container_name: rabbitmq
+    user: "rabbitmq"
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: rabbitmq-diagnostics check_port_connectivity
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  order-db:
+    image: postgres:18
+    env_file:
+      - ./services/order-service/.env.example
+    volumes:
+      - order-db-data:/var/lib/postgresql
+    ports:
+      - "${ORDER_DB_PORT:-5433}:5432"
+
+  inventory-db:
+    image: postgres:18
+    env_file:
+      - ./services/inventory-service/.env.example
+    volumes:
+      - inventory-db-data:/var/lib/postgresql
+    ports:
+      - "${INVENTORY_DB_PORT:-5434}:5432"
+
+  payment-db:
+    image: postgres:18
+    env_file:
+      - ./services/payment-service/.env.example
+    volumes:
+      - payment-db-data:/var/lib/postgresql
+    ports:
+      - "${PAYMENT_DB_PORT:-5435}:5432"
+
+  order-service:
+    build:
+      context: .
+      dockerfile: ./services/order-service/Dockerfile
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      order-db:
+        condition: service_started
+    env_file:
+      - ./services/order-service/.env.example
+    ports:
+      - "3001:3001"
+
+  inventory-service:
+    build:
+      context: .
+      dockerfile: ./services/inventory-service/Dockerfile
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      inventory-db:
+        condition: service_started
+    env_file:
+      - ./services/inventory-service/.env.example
+    ports:
+      - "3002:3002"
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: ./services/payment-service/Dockerfile
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      payment-db:
+        condition: service_started
+    env_file:
+      - ./services/payment-service/.env.example
+    ports:
+      - "3003:3003"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: ./frontend/Dockerfile
+      args:
+        - VITE_ORDER_SERVICE_URL=http://localhost:3001
+        - VITE_INVENTORY_SERVICE_URL=http://localhost:3002
+        - VITE_PAYMENT_SERVICE_URL=http://localhost:3003
+    env_file:
+      - ./frontend/.env.example
+    depends_on:
+      order-service:
+        condition: service_started
+      inventory-service:
+        condition: service_started
+      payment-service:
+        condition: service_started
+    ports:
+      - "4000:4000"
+
+volumes:
+  rabbitmq-data:
+  order-db-data:
+  inventory-db-data:
+  payment-db-data:
