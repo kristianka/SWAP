@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { type Order } from "@swap/shared";
-import { api, type InventoryItem, type Payment } from "../lib/api";
+import { type Order, type InventoryItem, type Payment } from "@swap/shared";
+import { api } from "../lib/api";
 
 const REFRESH_INTERVAL_MS = 10000;
 const SUCCESS_MESSAGE_DURATION_MS = 5000;

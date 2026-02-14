@@ -1,32 +1,9 @@
-import type { Order } from "@swap/shared";
-import { PaymentStatus } from "@swap/shared";
-
-// Database-specific interfaces (not in shared types as they're storage implementation details)
-export interface InventoryItem {
-  id: string;
-  name: string;
-  stock_level: number;
-  reserved: number;
-  available: number;
-  created_at: string;
-  updated_at: string;
-  version: number;
-}
-
-export interface Payment {
-  id: string;
-  order_id: string;
-  amount: number;
-  status: PaymentStatus;
-  created_at: string;
-  updated_at: string;
-  version: number;
-}
+import type { Order, InventoryItem, Payment } from "@swap/shared";
 
 const API_BASE_URLS = {
-  orders: "http://localhost:3001",
-  inventory: "http://localhost:3002",
-  payments: "http://localhost:3003",
+  orders: import.meta.env.VITE_ORDER_SERVICE_URL || "http://localhost:3001",
+  inventory: import.meta.env.VITE_INVENTORY_SERVICE_URL || "http://localhost:3002",
+  payments: import.meta.env.VITE_PAYMENT_SERVICE_URL || "http://localhost:3003",
 } as const;
 
 export interface ApiResponse<T> {
@@ -150,6 +127,7 @@ export const api = {
     items: { product: string; quantity: number }[],
     paymentBehaviour?: "success" | "failure" | "random",
     inventoryBehaviour?: "success" | "failure" | "random",
+    skipDemoDelays?: boolean,
   ): Promise<ApiResponse<Order>> {
     try {
       const response = await fetch(`${API_BASE_URLS.orders}/orders`, {
@@ -157,7 +135,7 @@ export const api = {
         headers: getHeaders({
           "Content-Type": "application/json",
         }),
-        body: JSON.stringify({ items, paymentBehaviour, inventoryBehaviour }),
+        body: JSON.stringify({ items, paymentBehaviour, inventoryBehaviour, skipDemoDelays }),
       });
 
       if (response.ok) {

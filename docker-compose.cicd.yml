@@ -3,12 +3,14 @@ services:
     image: rabbitmq:4.2.3-management
     container_name: rabbitmq
     user: "rabbitmq"
+    env_file:
+      - .env.example
     ports:
       - "${RABBITMQ_PORT:-5672}:5672"
       - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-admin}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-admin}
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
@@ -21,7 +23,7 @@ services:
   order-db:
     image: postgres:18
     env_file:
-      - ./services/order-service/.env
+      - ./services/order-service/.env.example
     volumes:
       - order-db-data:/var/lib/postgresql
     ports:
@@ -30,7 +32,7 @@ services:
   inventory-db:
     image: postgres:18
     env_file:
-      - ./services/inventory-service/.env
+      - ./services/inventory-service/.env.example
     volumes:
       - inventory-db-data:/var/lib/postgresql
     ports:
@@ -39,7 +41,7 @@ services:
   payment-db:
     image: postgres:18
     env_file:
-      - ./services/payment-service/.env
+      - ./services/payment-service/.env.example
     volumes:
       - payment-db-data:/var/lib/postgresql
     ports:
@@ -55,7 +57,7 @@ services:
       order-db:
         condition: service_started
     env_file:
-      - ./services/order-service/.env
+      - ./services/order-service/.env.example
     ports:
       - "3001:3001"
 
@@ -69,7 +71,7 @@ services:
       inventory-db:
         condition: service_started
     env_file:
-      - ./services/inventory-service/.env
+      - ./services/inventory-service/.env.example
     ports:
       - "3002:3002"
 
@@ -83,7 +85,7 @@ services:
       payment-db:
         condition: service_started
     env_file:
-      - ./services/payment-service/.env
+      - ./services/payment-service/.env.example
     ports:
       - "3003:3003"
 
@@ -91,8 +93,12 @@ services:
     build:
       context: .
       dockerfile: ./frontend/Dockerfile
+      args:
+        - VITE_ORDER_SERVICE_URL=http://localhost:3001
+        - VITE_INVENTORY_SERVICE_URL=http://localhost:3002
+        - VITE_PAYMENT_SERVICE_URL=http://localhost:3003
     env_file:
-      - ./frontend/.env
+      - ./frontend/.env.example
     depends_on:
       order-service:
         condition: service_started
@@ -101,7 +107,7 @@ services:
       payment-service:
         condition: service_started
     ports:
-      - "4000:80"
+      - "4000:4000"
 
 volumes:
   rabbitmq-data:

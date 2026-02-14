@@ -4,11 +4,11 @@ services:
     container_name: rabbitmq
     user: "rabbitmq"
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
     environment:
-      RABBITMQ_DEFAULT_USER: admin
-      RABBITMQ_DEFAULT_PASS: admin
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
@@ -20,33 +20,30 @@ services:
 
   order-db:
     image: postgres:18
-    environment:
-      POSTGRES_DB: orders
-      POSTGRES_PASSWORD: dev
+    env_file:
+      - ./services/order-service/.env
     volumes:
       - order-db-data:/var/lib/postgresql
     ports:
-      - "5433:5432"
+      - "${ORDER_DB_PORT:-5433}:5432"
 
   inventory-db:
     image: postgres:18
-    environment:
-      POSTGRES_DB: inventory
-      POSTGRES_PASSWORD: dev
+    env_file:
+      - ./services/inventory-service/.env
     volumes:
       - inventory-db-data:/var/lib/postgresql
     ports:
-      - "5434:5432"
+      - "${INVENTORY_DB_PORT:-5434}:5432"
 
   payment-db:
     image: postgres:18
-    environment:
-      POSTGRES_DB: payments
-      POSTGRES_PASSWORD: dev
+    env_file:
+      - ./services/payment-service/.env
     volumes:
       - payment-db-data:/var/lib/postgresql
     ports:
-      - "5435:5432"
+      - "${PAYMENT_DB_PORT:-5435}:5432"
 
   # services run in dev scripts
 

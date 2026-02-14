@@ -13,8 +13,8 @@ import { getChannel } from "./rabbitmq";
  * Order timeout configuration
  * Orders stuck in PENDING for longer than this will be auto-cancelled
  */
-const ORDER_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
-const CHECK_INTERVAL_MS = 60 * 1000; // Check every 1 minute
+const ORDER_TIMEOUT_MS = Number(process.env.ORDER_TIMEOUT_MS) || 5 * 60 * 1000; // Default: 5 minutes
+const CHECK_INTERVAL_MS = Number(process.env.ORDER_TIMEOUT_CHECK_INTERVAL_MS) || 60 * 1000; // Default: Check every 1 minute
 
 /**
  * Background job that checks for stuck orders and cancels them

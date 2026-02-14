@@ -12,7 +12,7 @@ import { hasProcessed, markProcessed } from "../storage/idempotencyStorage";
 import { addPayment, updatePaymentStatus } from "../storage/paymentStorage";
 
 export const handleInventoryReserved = async (event: InventoryReservedEvent) => {
-  const { orderId, items, paymentBehaviour } = event.data;
+  const { orderId, items, paymentBehaviour, skipDemoDelays } = event.data;
   const sagaId = event.correlationId;
   const sessionId = event.sessionId;
   const idempotencyKey = `payment:${orderId}`;
@@ -39,8 +39,11 @@ export const handleInventoryReserved = async (event: InventoryReservedEvent) => 
   });
   console.log(`[saga:${sagaId}] Payment created with PENDING status for order ${orderId}`);
 
-  // Simulate payment processing (increased for demo effect)
-  await new Promise((resolve) => setTimeout(resolve, 5000));
+  // Simulate payment processing (configurable delay for demo effect)
+  if (!skipDemoDelays) {
+    const processingDelay = Number(process.env.PAYMENT_PROCESSING_DELAY_MS) || 5000; // Default: 5 seconds
+    await new Promise((resolve) => setTimeout(resolve, processingDelay));
+  }
 
   try {
     // Determine if we should fail based on payment behaviour

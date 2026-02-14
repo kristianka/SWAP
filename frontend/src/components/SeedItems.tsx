@@ -1,10 +1,12 @@
 import { Button } from "./ui/button";
 import { getOrCreateSessionId } from "../lib/api";
 
+const INVENTORY_SERVICE_URL = import.meta.env.VITE_INVENTORY_SERVICE_URL || "http://localhost:3002";
+
 export const SeedItems = ({ onSeedComplete }: { onSeedComplete?: () => void }) => {
   const handleSeed = async () => {
     try {
-      const response = await fetch("http://localhost:3002/inventory/seed", {
+      const response = await fetch(`${INVENTORY_SERVICE_URL}/inventory/seed`, {
         method: "POST",
         headers: {
           "x-session-id": getOrCreateSessionId(),

@@ -36,7 +36,7 @@ async function start() {
 
     // Start HTTP server
     await app.listen({ port: Number(port), host: "0.0.0.0" });
-    console.log(`🚀 Order Service running on http://localhost:${port}`);
+    console.log(`Order Service running on http://localhost:${port}`);
   } catch (error) {
     console.error("Failed to start Order Service:", error);
     process.exit(1);

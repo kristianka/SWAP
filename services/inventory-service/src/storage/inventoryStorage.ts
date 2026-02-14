@@ -174,7 +174,7 @@ export const releaseItems = async (sessionId: string, orderId: string): Promise<
     ]);
 
     await client.query("COMMIT");
-    console.log(`✅ Released inventory for order ${orderId}`);
+    console.log(`Released inventory for order ${orderId}`);
     return true;
   } catch (error) {
     await client.query("ROLLBACK");
@@ -227,7 +227,7 @@ export const confirmReservation = async (sessionId: string, orderId: string): Pr
     );
 
     await client.query("COMMIT");
-    console.log(`✅ Confirmed reservation for order ${orderId}`);
+    console.log(`Confirmed reservation for order ${orderId}`);
     return true;
   } catch (error) {
     await client.query("ROLLBACK");
