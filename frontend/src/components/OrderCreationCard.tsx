@@ -5,7 +5,8 @@ import { Input } from "./ui/input";
 import { ShoppingCart, Plus, Minus, Trash2 } from "lucide-react";
 import { Spinner } from "./ui/spinner";
 import { TooltipProvider } from "./ui/tooltip";
-import { api, type InventoryItem } from "../lib/api";
+import { type InventoryItem } from "@swap/shared";
+import { api } from "../lib/api";
 import { BehaviourSelect } from "./BehaviourSelect";
 
 interface SelectedItem {
