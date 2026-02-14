@@ -39,18 +39,29 @@ export const checkServicesHealth = async () => {
  * - Clears idempotency records
  */
 export const resetAllServices = async (sessionId: string) => {
-  await fetch(`${ORDER_SERVICE_URL}/orders/reset`, {
+  const orderRes = await fetch(`${ORDER_SERVICE_URL}/orders/reset`, {
     method: "POST",
     headers: { "x-session-id": sessionId },
   });
-  await fetch(`${INVENTORY_SERVICE_URL}/inventory/reset`, {
+  if (!orderRes.ok) {
+    throw new Error(`Failed to reset Order Service: ${orderRes.statusText}`);
+  }
+
+  const inventoryRes = await fetch(`${INVENTORY_SERVICE_URL}/inventory/reset`, {
     method: "POST",
     headers: { "x-session-id": sessionId },
   });
-  await fetch(`${PAYMENT_SERVICE_URL}/payments/reset`, {
+  if (!inventoryRes.ok) {
+    throw new Error(`Failed to reset Inventory Service: ${inventoryRes.statusText}`);
+  }
+
+  const paymentRes = await fetch(`${PAYMENT_SERVICE_URL}/payments/reset`, {
     method: "POST",
     headers: { "x-session-id": sessionId },
   });
+  if (!paymentRes.ok) {
+    throw new Error(`Failed to reset Payment Service: ${paymentRes.statusText}`);
+  }
 
   // Small delay to ensure queues are drained
   await new Promise((resolve) => setTimeout(resolve, 500));
@@ -64,6 +75,11 @@ export const seedInventory = async (sessionId: string) => {
     method: "POST",
     headers: { "x-session-id": sessionId },
   });
+
+  if (!response.ok) {
+    throw new Error(`Failed to seed inventory: ${response.statusText}`);
+  }
+
   return response.json();
 };
 
@@ -79,6 +95,11 @@ export const waitForOrderStatus = async (
     const response = await fetch(`${ORDER_SERVICE_URL}/orders/${orderId}`, {
       headers: { "x-session-id": sessionId },
     });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch order ${orderId}: ${response.statusText}`);
+    }
+
     const order = (await response.json()) as Order;
 
     if ([OrderStatus.COMPLETED, OrderStatus.CANCELLED].includes(order.status)) {
@@ -104,6 +125,10 @@ export const waitForPaymentStatus = async (
     const response = await fetch(`${PAYMENT_SERVICE_URL}/payments`, {
       headers: { "x-session-id": sessionId },
     });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch payments: ${response.statusText}`);
+    }
+
     const payments = (await response.json()) as Payment[];
     const payment = payments.find((p) => p.order_id === orderId);
 
