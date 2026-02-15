@@ -1,5 +1,5 @@
 import amqplib from "amqplib";
-import { assertAllQueues, assertAllExchanges, QUEUES, EXCHANGES, ROUTING_KEYS } from "@swap/shared";
+import { QUEUES, EXCHANGES, ROUTING_KEYS } from "@swap/shared";
 
 let channel: amqplib.Channel | null = null;
 
@@ -8,9 +8,15 @@ export const connectToRabbitMQ = async () => {
   const connection = await amqplib.connect(rabbitMqURL);
   channel = await connection.createChannel();
 
-  await assertAllExchanges(channel);
-  await assertAllQueues(channel);
+  // Assert all exchanges this service needs to interact with
+  await channel.assertExchange(EXCHANGES.INVENTORY_EXCHANGE, "topic", { durable: true });
+  await channel.assertExchange(EXCHANGES.ORDER_EXCHANGE, "topic", { durable: true });
+  await channel.assertExchange(EXCHANGES.PAYMENT_EXCHANGE, "topic", { durable: true });
 
+  // Assert the queue this service consumes from
+  await channel.assertQueue(QUEUES.ORDER_EVENTS, { durable: true });
+
+  // Bind the queues to the exchanges it needs to listen to
   await channel.bindQueue(
     QUEUES.ORDER_EVENTS,
     EXCHANGES.ORDER_EXCHANGE,
