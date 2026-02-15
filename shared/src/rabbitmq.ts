@@ -1,5 +1,5 @@
 import type { Channel } from "amqplib";
-import { QUEUES, EXCHANGES } from "./constants";
+import { QUEUES } from "./constants";
 
 /**
  * Dead Letter Queue configuration
