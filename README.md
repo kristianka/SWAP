@@ -234,6 +234,14 @@ gcloud iam service-accounts keys create gcp-key.json --iam-account=github-action
 
 # Copy to clipboard (PowerShell)
 Get-Content gcp-key.json | Set-Clipboard
+
+
+# HTTPS setup
+# Create static IP for Ingress
+gcloud compute addresses create swap-static-ip --global
+
+# Get the IP address (use this in DNS setup)
+gcloud compute addresses describe swap-static-ip --global --format="get(address)"
 ```
 
 ## Session Isolation
