@@ -1,11 +1,11 @@
-FROM oven/bun:1.2.2-alpine AS base
+FROM oven/bun:1.3.1-alpine AS base
 WORKDIR /app
 
 # Install dependencies for all workspace packages
 FROM base AS deps
 # Copy workspace configuration
 COPY package.docker.json ./package.json
-COPY bun.lockb* ./
+COPY bun.lock ./
 
 # Copy shared package
 COPY shared/package.json shared/
@@ -16,7 +16,7 @@ COPY shared/src shared/src/
 COPY services/order-service/package.json services/order-service/
 
 # Install dependencies (this will resolve workspace:* dependencies)
-RUN bun install --frozen-lockfile
+RUN bun install
 
 # Build stage - copy source code
 FROM base AS build
@@ -35,10 +35,9 @@ ENV NODE_ENV=production
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/shared ./shared
 COPY --from=build /app/services/order-service ./services/order-service
+COPY --from=deps /app/services/order-service/node_modules ./services/order-service/node_modules/
 COPY package.docker.json ./package.json
-
-WORKDIR /app/services/order-service
 
 EXPOSE 3000
 
-CMD ["bun", "run", "start"]
+CMD ["bun", "run", "--cwd", "services/order-service", "start"]

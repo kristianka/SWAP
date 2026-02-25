@@ -5,10 +5,13 @@ metadata:
   namespace: swap
   annotations:
     kubernetes.io/ingress.class: "gce"
+    networking.gke.io/managed-certificates: "swap-certificate"
+    kubernetes.io/ingress.global-static-ip-name: "swap-static-ip"
 spec:
   ingressClassName: gce
   rules:
-    - http:
+    - host: swap.kristiankahkonen.com
+      http:
         paths:
           # Frontend
           - path: /

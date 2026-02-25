@@ -1,4 +1,4 @@
-FROM oven/bun:1.2.2-alpine AS base
+FROM oven/bun:1.3.1-alpine AS base
 WORKDIR /app
 
 # Install dependencies stage
@@ -17,7 +17,7 @@ COPY frontend/package.json frontend/
 COPY frontend/bun.lock frontend/bun.lock
 
 # Install dependencies (this will resolve workspace:* dependencies)
-RUN bun install --frozen-lockfile
+RUN bun install
 
 # Build stage - compile the frontend
 FROM base AS build
