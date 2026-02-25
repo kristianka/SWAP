@@ -227,6 +227,7 @@ gcloud container clusters update swap-cluster --location=europe-north1-b --gatew
 # Grant roles
 gcloud projects add-iam-policy-binding dwk-gke-484423 --member="serviceAccount:github-actions@dwk-gke-484423.iam.gserviceaccount.com" --role="roles/container.developer"
 gcloud projects add-iam-policy-binding dwk-gke-484423 --member="serviceAccount:github-actions@dwk-gke-484423.iam.gserviceaccount.com" --role="roles/storage.admin"
+gcloud projects add-iam-policy-binding dwk-gke-484423 --member="serviceAccount:github-actions@dwk-gke-484423.iam.gserviceaccount.com" --role="roles/artifactregistry.writer"
 
 # Create key file
 gcloud iam service-accounts keys create gcp-key.json --iam-account=github-actions@dwk-gke-484423.iam.gserviceaccount.com

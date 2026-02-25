@@ -74,6 +74,10 @@ jobs:
               with:
                   credentials_json: ${{ secrets.GCP_SA_KEY }}
 
+            - name: Install gke-gcloud-auth-plugin
+              run: |
+                  gcloud components install gke-gcloud-auth-plugin
+
             - name: Get GKE credentials
               run: |
                   gcloud container clusters get-credentials $GKE_CLUSTER --zone $GKE_ZONE
