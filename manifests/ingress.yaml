@@ -1,0 +1,44 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: swap-ingress
+  namespace: swap
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+spec:
+  ingressClassName: gce
+  rules:
+    - http:
+        paths:
+          # Frontend
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-svc
+                port:
+                  number: 80
+          # Order Service API
+          - path: /api/orders
+            pathType: Prefix
+            backend:
+              service:
+                name: order-service-svc
+                port:
+                  number: 3001
+          # Inventory Service API
+          - path: /api/inventory
+            pathType: Prefix
+            backend:
+              service:
+                name: inventory-service-svc
+                port:
+                  number: 3002
+          # Payment Service API
+          - path: /api/payments
+            pathType: Prefix
+            backend:
+              service:
+                name: payment-service-svc
+                port:
+                  number: 3003
