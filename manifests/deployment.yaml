@@ -49,6 +49,8 @@ spec:
                 secretKeyRef:
                   name: swap-secrets
                   key: ORDER_POSTGRES_DB
+            - name: DATABASE_URL
+              value: "postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)"
             - name: RABBITMQ_USER
               valueFrom:
                 secretKeyRef:
@@ -129,6 +131,8 @@ spec:
                 secretKeyRef:
                   name: swap-secrets
                   key: INVENTORY_POSTGRES_DB
+            - name: DATABASE_URL
+              value: "postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)"
             - name: RABBITMQ_USER
               valueFrom:
                 secretKeyRef:
@@ -209,6 +213,8 @@ spec:
                 secretKeyRef:
                   name: swap-secrets
                   key: PAYMENT_POSTGRES_DB
+            - name: DATABASE_URL
+              value: "postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)"
             - name: RABBITMQ_USER
               valueFrom:
                 secretKeyRef:
