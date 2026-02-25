@@ -13,16 +13,8 @@ spec:
     - host: swap.kristiankahkonen.com
       http:
         paths:
-          # Frontend
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: frontend-svc
-                port:
-                  number: 80
-          # Order Service API
-          - path: /api/orders
+          # Order Service API (must come before frontend to avoid being caught by / path)
+          - path: /orders
             pathType: Prefix
             backend:
               service:
@@ -30,7 +22,7 @@ spec:
                 port:
                   number: 3001
           # Inventory Service API
-          - path: /api/inventory
+          - path: /inventory
             pathType: Prefix
             backend:
               service:
@@ -38,10 +30,18 @@ spec:
                 port:
                   number: 3002
           # Payment Service API
-          - path: /api/payments
+          - path: /payments
             pathType: Prefix
             backend:
               service:
                 name: payment-service-svc
                 port:
                   number: 3003
+          # Frontend (catch-all, must be last)
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-svc
+                port:
+                  number: 80

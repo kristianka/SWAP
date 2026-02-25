@@ -21,6 +21,17 @@ RUN bun install
 
 # Build stage - compile the frontend
 FROM base AS build
+
+# Accept build arguments for API URLs
+ARG VITE_ORDER_SERVICE_URL=http://localhost:3001
+ARG VITE_INVENTORY_SERVICE_URL=http://localhost:3002
+ARG VITE_PAYMENT_SERVICE_URL=http://localhost:3003
+
+# Set them as environment variables for Vite
+ENV VITE_ORDER_SERVICE_URL=$VITE_ORDER_SERVICE_URL
+ENV VITE_INVENTORY_SERVICE_URL=$VITE_INVENTORY_SERVICE_URL
+ENV VITE_PAYMENT_SERVICE_URL=$VITE_PAYMENT_SERVICE_URL
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/shared ./shared
 COPY --from=deps /app/frontend ./frontend
