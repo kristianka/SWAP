@@ -216,6 +216,8 @@ curl -X POST -H "x-session-id: your-session-id" http://localhost:3002/inventory/
 Remember to setup environment secrets to GitHub Actions secrets (take example from manifests/.env.example)
 
 ```bash
+# Note: replace project id and cluster details as needed
+
 # Create GKE Cluster
 gcloud container clusters create swap-cluster --zone=europe-north1-b --disk-size=16 --num-nodes=3 --machine-type=e2-medium
 
