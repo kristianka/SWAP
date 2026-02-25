@@ -1,4 +1,4 @@
-FROM oven/bun:1.2.2-alpine AS base
+FROM oven/bun:1.3.1-alpine AS base
 WORKDIR /app
 
 # Install dependencies for all workspace packages
@@ -16,7 +16,7 @@ COPY shared/src shared/src/
 COPY services/inventory-service/package.json services/inventory-service/
 
 # Install dependencies (this will resolve workspace:* dependencies)
-RUN bun install --frozen-lockfile
+RUN bun install
 
 # Build stage - copy source code
 FROM base AS build
@@ -35,10 +35,9 @@ ENV NODE_ENV=production
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/shared ./shared
 COPY --from=build /app/services/inventory-service ./services/inventory-service
+COPY --from=deps /app/services/inventory-service/node_modules ./services/inventory-service/node_modules/
 COPY package.docker.json ./package.json
-
-WORKDIR /app/services/inventory-service
 
 EXPOSE 3000
 
-CMD ["bun", "run", "start"]
+CMD ["bun", "run", "--cwd", "services/inventory-service", "start"]
