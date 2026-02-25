@@ -5,7 +5,7 @@ WORKDIR /app
 FROM base AS deps
 # Copy workspace configuration
 COPY package.docker.json ./package.json
-COPY bun.lockb* ./
+COPY bun.lock ./
 
 # Copy shared package
 COPY shared/package.json shared/
