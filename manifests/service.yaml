@@ -1,0 +1,59 @@
+# Order Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service-svc
+  namespace: swap
+spec:
+  selector:
+    app: order-service
+  ports:
+    - name: http
+      port: 3001
+      targetPort: 3001
+      protocol: TCP
+---
+# Inventory Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: inventory-service-svc
+  namespace: swap
+spec:
+  selector:
+    app: inventory-service
+  ports:
+    - name: http
+      port: 3002
+      targetPort: 3002
+      protocol: TCP
+---
+# Payment Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-service-svc
+  namespace: swap
+spec:
+  selector:
+    app: payment-service
+  ports:
+    - name: http
+      port: 3003
+      targetPort: 3003
+      protocol: TCP
+---
+# Frontend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-svc
+  namespace: swap
+spec:
+  selector:
+    app: frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP

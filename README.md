@@ -211,6 +211,30 @@ curl -X POST -H "x-session-id: your-session-id" http://localhost:3002/inventory/
 - See individual service folders for install and development run instructions.
 - Or just run `docker compose up` after setting up environment values.
 
+#### GKE Deployment
+
+Remember to setup environment secrets to GitHub Actions secrets (take example from manifests/.env.example)
+
+```bash
+# Note: replace project id and cluster details as needed
+
+# Create GKE Cluster
+gcloud container clusters create swap-cluster --zone=europe-north1-b --disk-size=16 --num-nodes=3 --machine-type=e2-medium
+
+# Enable Gateway API (required for Ingress)
+gcloud container clusters update swap-cluster --location=europe-north1-b --gateway-api=standard
+
+# Grant roles
+gcloud projects add-iam-policy-binding dwk-gke-484423 --member="serviceAccount:github-actions@dwk-gke-484423.iam.gserviceaccount.com" --role="roles/container.developer"
+gcloud projects add-iam-policy-binding dwk-gke-484423 --member="serviceAccount:github-actions@dwk-gke-484423.iam.gserviceaccount.com" --role="roles/storage.admin"
+
+# Create key file
+gcloud iam service-accounts keys create gcp-key.json --iam-account=github-actions@dwk-gke-484423.iam.gserviceaccount.com
+
+# Copy to clipboard (PowerShell)
+Get-Content gcp-key.json | Set-Clipboard
+```
+
 ## Session Isolation
 
 We use **session-based data isolation** to support multiple concurrent users in public demos without data conflicts.

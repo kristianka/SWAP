@@ -1,0 +1,122 @@
+name: Deploy to GKE
+
+on:
+    push:
+        branches:
+            - main
+
+env:
+    GKE_CLUSTER: swap-cluster
+    GKE_ZONE: europe-north1-b
+    GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        environment: deploy
+        strategy:
+            matrix:
+                service:
+                    - name: order-service
+                      dockerfile: services/order-service/Dockerfile
+                    - name: inventory-service
+                      dockerfile: services/inventory-service/Dockerfile
+                    - name: payment-service
+                      dockerfile: services/payment-service/Dockerfile
+                    - name: frontend
+                      dockerfile: frontend/Dockerfile
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up Cloud SDK
+              uses: google-github-actions/setup-gcloud@v2
+              with:
+                  project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+            - name: Authenticate with GCP
+              uses: google-github-actions/auth@v2
+              with:
+                  credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+            - name: Configure Docker for GCR
+              run: |
+                  gcloud auth configure-docker
+
+            - name: Build and push ${{ matrix.service.name }}
+              run: |
+                  docker build -t gcr.io/$GCP_PROJECT_ID/${{ matrix.service.name }}:${{ github.sha }} \
+                    -t gcr.io/$GCP_PROJECT_ID/${{ matrix.service.name }}:latest \
+                    -f ${{ matrix.service.dockerfile }} .
+                  docker push gcr.io/$GCP_PROJECT_ID/${{ matrix.service.name }}:${{ github.sha }}
+                  docker push gcr.io/$GCP_PROJECT_ID/${{ matrix.service.name }}:latest
+
+    deploy:
+        needs: build
+        environment: deploy
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up Cloud SDK
+              uses: google-github-actions/setup-gcloud@v2
+              with:
+                  project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+            - name: Authenticate with GCP
+              uses: google-github-actions/auth@v2
+              with:
+                  credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+            - name: Get GKE credentials
+              run: |
+                  gcloud container clusters get-credentials $GKE_CLUSTER --zone $GKE_ZONE
+
+            - name: Create .env file from secrets
+              run: |
+                  cd manifests
+                  cat > .env << EOF
+                  RABBITMQ_DEFAULT_USER=${{ secrets.RABBITMQ_DEFAULT_USER }}
+                  RABBITMQ_DEFAULT_PASS=${{ secrets.RABBITMQ_DEFAULT_PASS }}
+                  ORDER_POSTGRES_USER=${{ secrets.ORDER_POSTGRES_USER }}
+                  ORDER_POSTGRES_PASSWORD=${{ secrets.ORDER_POSTGRES_PASSWORD }}
+                  ORDER_POSTGRES_DB=${{ secrets.ORDER_POSTGRES_DB }}
+                  INVENTORY_POSTGRES_USER=${{ secrets.INVENTORY_POSTGRES_USER }}
+                  INVENTORY_POSTGRES_PASSWORD=${{ secrets.INVENTORY_POSTGRES_PASSWORD }}
+                  INVENTORY_POSTGRES_DB=${{ secrets.INVENTORY_POSTGRES_DB }}
+                  PAYMENT_POSTGRES_USER=${{ secrets.PAYMENT_POSTGRES_USER }}
+                  PAYMENT_POSTGRES_PASSWORD=${{ secrets.PAYMENT_POSTGRES_PASSWORD }}
+                  PAYMENT_POSTGRES_DB=${{ secrets.PAYMENT_POSTGRES_DB }}
+                  EOF
+
+            - name: Update kustomization with new image tags
+              run: |
+                  cd manifests
+                  # Update image tags to use the commit SHA
+                  kustomize edit set image \
+                    PROJECT/order-service=gcr.io/$GCP_PROJECT_ID/order-service:${{ github.sha }} \
+                    PROJECT/inventory-service=gcr.io/$GCP_PROJECT_ID/inventory-service:${{ github.sha }} \
+                    PROJECT/payment-service=gcr.io/$GCP_PROJECT_ID/payment-service:${{ github.sha }} \
+                    PROJECT/frontend=gcr.io/$GCP_PROJECT_ID/frontend:${{ github.sha }}
+
+            - name: Deploy to GKE
+              run: |
+                  kubectl apply -k manifests/
+
+            - name: Verify deployment
+              run: |
+                  kubectl rollout status deployment/order-service -n swap --timeout=5m
+                  kubectl rollout status deployment/inventory-service -n swap --timeout=5m
+                  kubectl rollout status deployment/payment-service -n swap --timeout=5m
+                  kubectl rollout status deployment/frontend -n swap --timeout=5m
+
+            - name: Get Ingress IP
+              run: |
+                  echo "Waiting for Ingress to get an external IP..."
+                  kubectl get ingress swap-ingress -n swap -w &
+                  sleep 60
+                  INGRESS_IP=$(kubectl get ingress swap-ingress -n swap -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+                  echo "Application is accessible at: http://$INGRESS_IP"
