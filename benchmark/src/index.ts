@@ -13,6 +13,7 @@
  *   --orders <n>         Number of orders to create (default: 10)
  *   --concurrency <n>    Concurrent requests (default: 1)
  *   --behaviour <type>   Order behaviour: success|payment-failure|inventory-failure (default: success)
+ *   --product-ids <ids>  Comma-separated product IDs (default: laptop,mouse,keyboard,monitor)
  *   --skip-delays        Skip artificial processing delays (for max throughput testing)
  */
 
@@ -21,8 +22,37 @@ import { parseArgs } from "./config.js";
 import { metrics, printStats } from "./metrics.js";
 import { processSingleOrder } from "./order-operations.js";
 
+async function seedInventory(baseUrl: string): Promise<void> {
+  // Convert order service URL (port 3001) to inventory service URL (port 3002)
+  const inventoryUrl = baseUrl.replace(/:3001/, ":3002");
+  const seedUrl = `${inventoryUrl}/inventory/seed`;
+
+  console.log("Seeding inventory...");
+
+  try {
+    const response = await fetch(seedUrl, {
+      method: "POST",
+      headers: {
+        "x-session-id": "benchmark",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to seed inventory: ${response.status} ${response.statusText}`);
+    }
+
+    const result = (await response.json()) as { products?: unknown[] };
+    console.log(`Inventory seeded: ${result.products?.length || 0} products available`);
+  } catch (error) {
+    console.warn(`Could not seed inventory: ${error}`);
+    console.log("Continuing with existing inventory...");
+  }
+  console.log("");
+}
+
 async function runBenchmark(config: BenchmarkConfig): Promise<void> {
   console.log("Starting benchmark...");
+  await seedInventory(config.baseUrl);
   console.log(`Creating ${config.totalOrders} orders with concurrency ${config.concurrency}`);
   console.log("");
 
@@ -58,4 +88,3 @@ async function runBenchmark(config: BenchmarkConfig): Promise<void> {
     process.exit(1);
   }
 })();
-

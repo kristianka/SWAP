@@ -4,6 +4,7 @@ export interface BenchmarkConfig {
   concurrency: number;
   behaviour: "success" | "payment-failure" | "inventory-failure";
   skipDelays: boolean;
+  productIds: string[];
 }
 
 export interface HttpResponse {
@@ -13,7 +14,7 @@ export interface HttpResponse {
 
 export interface OrderData {
   userId: string;
-  items: Array<{ productId: string; quantity: number }>;
+  items: Array<{ product: string; quantity: number }>;
   behaviour: string;
   skipDemoDelays: boolean;
 }

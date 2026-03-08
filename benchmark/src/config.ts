@@ -14,11 +14,16 @@ export function parseArgs(): BenchmarkConfig {
   const behaviour = getArg("behaviour", "success") as BenchmarkConfig["behaviour"];
   const skipDelays = args.includes("--skip-delays");
 
+  // Parse product IDs (comma-separated), default to seeded products
+  const productIdsStr = getArg("product-ids", "laptop,mouse,keyboard,monitor");
+  const productIds = productIdsStr.split(",").map((id) => id.trim());
+
   return {
     baseUrl,
     totalOrders,
     concurrency,
     behaviour,
     skipDelays,
+    productIds,
   };
 }

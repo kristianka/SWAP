@@ -13,10 +13,14 @@ export async function createOrder(
   orderNum: number,
   behaviour: string,
   skipDelays: boolean,
+  productIds: string[],
 ): Promise<CreateOrderResult> {
+  // Randomly select a product from the available list
+  const product = productIds[Math.floor(Math.random() * productIds.length)];
+
   const orderData: OrderData = {
     userId: `bench-user-${orderNum}`,
-    items: [{ productId: "item1", quantity: 1 }],
+    items: [{ product, quantity: 1 }],
     behaviour: behaviour,
     skipDemoDelays: skipDelays,
   };
@@ -77,6 +81,7 @@ export async function processSingleOrder(
       orderNum,
       config.behaviour,
       config.skipDelays,
+      config.productIds,
     );
 
     // Wait for completion
