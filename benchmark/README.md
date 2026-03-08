@@ -6,7 +6,7 @@ Measures end-to-end SWAP order processing performance.
 
 ```bash
 bun run build
->> bun start -- --orders 100 --concurrency 10 --skip-delays
+bun start -- --orders 100 --concurrency 10 --skip-delays
 ```
 
 **Options:**
@@ -31,5 +31,3 @@ kubectl logs -f job/swap-benchmark -n swap
 ```
 
 **Options:** Edit `manifests/benchmark-job.yaml` args section to change orders, concurrency, product IDs, etc.
-
-See [BENCHMARKING.md](../BENCHMARKING.md) for setup.
