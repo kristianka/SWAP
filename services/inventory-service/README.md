@@ -11,7 +11,7 @@ bun run dev
 
 ## API Endpoints
 
-**Note:** All endpoints require `x-session-id` header for data isolation.
+**Note:** Requires `x-session-id` header.
 
 ### Get Inventory
 
@@ -55,20 +55,11 @@ Returns aggregated inventory statistics:
 
 ## Database
 
-The inventory service maintains three tables:
+- **products** - Product details with composite primary key `(id, session_id)`
+- **reservations** - Stock reservations with composite key `(order_id, session_id)`
+- **processed_events** - Idempotency tracking
 
-- **products** - Stores product details with composite primary key `(id, session_id)` for isolation
-- **reservations** - Tracks stock reservations by order with composite key `(order_id, session_id)`
-- **processed_events** - Idempotency tracking to prevent duplicate processing
-
-### Session Isolation
-
-All data tables include `session_id` column:
-
-- Composite primary keys ensure data isolation between sessions
-- All queries filter by `session_id` from request headers
-- Each session maintains independent inventory and reservations
-- Enables multiple concurrent users in demo environments
+See main [README](../../README.md#session-isolation) for session isolation details.
 
 ## Saga Participation
 

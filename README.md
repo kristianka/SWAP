@@ -35,27 +35,13 @@ This system uses **RabbitMQ topic exchanges** for true pub/sub choreography:
 - `inventory-exchange` - Inventory-related events
 - `payment-exchange` - Payment-related events
 
-**Queues & Bindings:**
+**Event Subscriptions (Consumer View):**
 
-| Queue              | Constant                  | Bound Exchanges                          | Events Received                                         | Consumer          |
-| ------------------ | ------------------------- | ---------------------------------------- | ------------------------------------------------------- | ----------------- |
-| `order-events`     | `QUEUES.ORDER_EVENTS`     | `order-exchange`, `payment-exchange`     | `ORDER_CREATED`, `PAYMENT_SUCCESS`, `PAYMENT_FAILED`    | Inventory Service |
-| `inventory-events` | `QUEUES.INVENTORY_EVENTS` | `inventory-exchange`                     | `INVENTORY_RESERVED`                                    | Payment Service   |
-| `payment-events`   | `QUEUES.PAYMENT_EVENTS`   | `payment-exchange`, `inventory-exchange` | `PAYMENT_SUCCESS`, `PAYMENT_FAILED`, `INVENTORY_FAILED` | Order Service     |
-
-**How Exchanges Enable Choreography:**
-
-- Services publish events to **exchanges** (not directly to queues)
-- Each service creates its own queue and **binds** it to exchanges it cares about
-- Publishers don't know who consumes their events (true decoupling)
-- New consumers can be added by simply binding new queues to existing exchanges
-- No dual publishing needed - one publish reaches all interested subscribers
-
-**Example Flow:**
-
-1. Payment Service publishes `PAYMENT_SUCCESS` to `payment-exchange`
-2. Both Order Service and Inventory Service receive it (their queues are bound to that exchange)
-3. Payment Service doesn't know or care who listens - pure choreography
+| Service           | Subscribes To Queue | Listens To Exchanges                     | Events Consumed                                         | Purpose                                          |
+| ----------------- | ------------------- | ---------------------------------------- | ------------------------------------------------------- | ------------------------------------------------ |
+| Inventory Service | `order-events`      | `order-exchange`, `payment-exchange`     | `ORDER_CREATED`, `PAYMENT_SUCCESS`, `PAYMENT_FAILED`    | Reserve stock, confirm/release based on payment  |
+| Payment Service   | `inventory-events`  | `inventory-exchange`                     | `INVENTORY_RESERVED`                                    | Process payment after inventory confirmation     |
+| Order Service     | `payment-events`    | `payment-exchange`, `inventory-exchange` | `PAYMENT_SUCCESS`, `PAYMENT_FAILED`, `INVENTORY_FAILED` | Update order status based on transaction outcome |
 
 ## Flow
 
@@ -115,10 +101,6 @@ This project has automated testing made with Bun, which are run automatically in
 ### Benchmarking
 
 See `benchmark/README.md` for instructions on running performance benchmarks against the system, both locally and in GKE.
-
-### Happy path
-
-Happy path (=successful) is the scenario when everything goes fine: user creates an order, there's inventory and payment succeeds. See instructions in `services/order-service` how to run.
 
 ### Failure Scenarios
 
@@ -259,13 +241,7 @@ We use **session-based data isolation** to support multiple concurrent users in 
 - All API requests include `x-session-id` header
 - Session ID flows through the entire saga workflow via events
 - Users only see their own orders, inventory, and payments
-
-### Frontend Features
-
-**Session Display & Regeneration:**
-
-- Session ID shown in the UI
-- Click the refresh button to generate a new session
+- Session ID shown in the UI with refresh button to generate new sessions
 - Sessions seeded automatically
 
 ### Implementation Details

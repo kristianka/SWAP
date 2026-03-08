@@ -11,30 +11,11 @@ React + TypeScript + Vite frontend for the SWAP distributed order processing sys
 
 ## Session Management
 
-The frontend implements session-based isolation for multi-user demo environments:
+- **Session ID**: Auto-generated UUID stored in localStorage, displayed in header
+- **Regenerate Button**: Creates fresh session with clean data
+- **Seed Inventory Button**: Populates initial stock (required per session)
 
-### Session ID
-
-- Automatically generated UUID on first visit
-- Stored in browser localStorage (`swap-demo-session-id`)
-- Displayed in the header at the top-right of the page
-- Included in all API requests via `x-session-id` header
-
-### Session Controls
-
-- **Regenerate Button**: Creates a new session ID
-  - Clears all previous data from view
-  - Provides fresh isolated environment
-  - Useful for starting new demos!
-
-### Seed Inventory
-
-- **"Seed Inventory" button**: Populates initial product stock
-  - Gaming Laptop (5 units)
-  - Wireless Mouse (67 units)
-  - Mechanical Keyboard (21 units)
-  - 4K Monitor (15 units)
-- Must be clicked for each new session to have products available
+See main [README](../README.md#session-isolation) for architecture details.
 
 ## API Communication
 
