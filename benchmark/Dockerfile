@@ -1,15 +1,15 @@
-FROM node:22-alpine AS builder
+FROM node:25-alpine AS builder
 
 WORKDIR /app
 
 # Copy benchmark package files
-COPY benchmark/package.json benchmark/tsconfig.json ./
+COPY package.json tsconfig.json ./
 
 # Install dependencies
 RUN npm install
 
 # Copy source
-COPY benchmark/src ./src
+COPY src ./src
 
 # Build TypeScript
 RUN npm run build
@@ -17,7 +17,7 @@ RUN npm run build
 # ============================================================================
 # Production image
 # ============================================================================
-FROM node:22-alpine
+FROM node:25-alpine
 
 WORKDIR /app
 
