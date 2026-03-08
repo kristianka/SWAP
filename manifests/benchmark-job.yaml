@@ -14,7 +14,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: benchmark
-          image: gcr.io/YOUR_PROJECT_ID/swap-benchmark:latest
+          image: gcr.io/dwk-gke-484423/swap-benchmark:latest
           env:
             - name: ORDER_SERVICE_URL
               value: "http://order-service:3001"
