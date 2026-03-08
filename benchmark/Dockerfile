@@ -3,13 +3,13 @@ FROM node:25-alpine AS builder
 WORKDIR /app
 
 # Copy benchmark package files
-COPY package.json tsconfig.json ./
+COPY benchmark/package.json benchmark/tsconfig.json ./
 
 # Install dependencies
 RUN npm install
 
 # Copy source
-COPY src ./src
+COPY benchmark/src ./src
 
 # Build TypeScript
 RUN npm run build

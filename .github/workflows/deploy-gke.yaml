@@ -25,6 +25,8 @@ jobs:
             dockerfile: services/payment-service/Dockerfile
           - name: frontend
             dockerfile: frontend/Dockerfile
+          - name: benchmark
+            dockerfile: benchmark/Dockerfile
 
     steps:
       - name: Checkout code
@@ -46,6 +48,9 @@ jobs:
 
       - name: Build and push ${{ matrix.service.name }}
         run: |
+          docker build -t gcr.io/$GCP_PROJECT_ID/${{ matrix.service.name }}:${{ github.sha }} \
+            -t gcr.io/$GCP_PROJECT_ID/${{ matrix.service.name }}:latest \
+            -f ${{ matrix.service.dockerfile }} .
           # Set build args for frontend
           if [ "${{ matrix.service.name }}" = "frontend" ]; then
             docker build -t gcr.io/$GCP_PROJECT_ID/${{ matrix.service.name }}:${{ github.sha }} \
