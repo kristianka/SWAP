@@ -1,5 +1,5 @@
 import type { Order } from "@swap/shared";
-import type { OrderStatus } from "@swap/shared";
+import { OrderStatus } from "@swap/shared";
 import { pool } from "../db";
 
 export const addOrder = async (order: Order): Promise<void> => {
@@ -43,6 +43,7 @@ export const getOrders = async (sessionId: string): Promise<Order[]> => {
     status: row.status,
     errorMessage: row.error_message,
     createdAt: row.created_at,
+    completedAt: row.completed_at,
   }));
 };
 
@@ -69,6 +70,7 @@ export const getOrderById = async (sessionId: string, id: string): Promise<Order
     status: row.status,
     errorMessage: row.error_message,
     createdAt: row.created_at,
+    completedAt: row.completed_at,
   };
 };
 
@@ -78,17 +80,22 @@ export const updateOrderStatus = async (
   status: OrderStatus,
   errorMessage?: string,
 ): Promise<boolean> => {
+  // Set completed_at timestamp when order reaches a final status
+  const isFinalStatus = status === OrderStatus.COMPLETED || status === OrderStatus.CANCELLED;
+  const completedAt = isFinalStatus ? new Date().toISOString() : null;
+
   const result = await pool.query(
     `
     UPDATE
       orders
     SET
       status = $1,
-      error_message = $2
+      error_message = $2,
+      completed_at = COALESCE(completed_at, $5)
     WHERE
       id = $3 AND session_id = $4
     `,
-    [status, errorMessage || null, orderId, sessionId],
+    [status, errorMessage || null, orderId, sessionId, completedAt],
   );
   return result.rowCount !== null && result.rowCount > 0;
 };

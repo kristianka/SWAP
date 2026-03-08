@@ -88,6 +88,19 @@ export const initDatabase = async (): Promise<void> => {
       CREATE INDEX IF NOT EXISTS idx_orders_saga_id ON orders(saga_id);
     `);
 
+    // Add completed_at column if it doesn't exist (migration)
+    await pool.query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'orders' AND column_name = 'completed_at'
+        ) THEN
+          ALTER TABLE orders ADD COLUMN completed_at TIMESTAMP;
+        END IF;
+      END $$;
+    `);
+
     // Create idempotency table for external event processing
     await pool.query(`
       CREATE TABLE IF NOT EXISTS processed_events (

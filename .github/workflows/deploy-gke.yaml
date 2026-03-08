@@ -51,6 +51,19 @@ jobs:
           docker build -t gcr.io/$GCP_PROJECT_ID/${{ matrix.service.name }}:${{ github.sha }} \
             -t gcr.io/$GCP_PROJECT_ID/${{ matrix.service.name }}:latest \
             -f ${{ matrix.service.dockerfile }} .
+          # Set build args for frontend
+          if [ "${{ matrix.service.name }}" = "frontend" ]; then
+            docker build -t gcr.io/$GCP_PROJECT_ID/${{ matrix.service.name }}:${{ github.sha }} \
+              -t gcr.io/$GCP_PROJECT_ID/${{ matrix.service.name }}:latest \
+              --build-arg VITE_ORDER_SERVICE_URL=https://swap.kristiankahkonen.com \
+              --build-arg VITE_INVENTORY_SERVICE_URL=https://swap.kristiankahkonen.com \
+              --build-arg VITE_PAYMENT_SERVICE_URL=https://swap.kristiankahkonen.com \
+              -f ${{ matrix.service.dockerfile }} .
+          else
+            docker build -t gcr.io/$GCP_PROJECT_ID/${{ matrix.service.name }}:${{ github.sha }} \
+              -t gcr.io/$GCP_PROJECT_ID/${{ matrix.service.name }}:latest \
+              -f ${{ matrix.service.dockerfile }} .
+          fi
           docker push gcr.io/$GCP_PROJECT_ID/${{ matrix.service.name }}:${{ github.sha }}
           docker push gcr.io/$GCP_PROJECT_ID/${{ matrix.service.name }}:latest
 

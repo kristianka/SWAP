@@ -44,6 +44,7 @@ export const OrderTable = ({ orders, lastRefreshed }: OrderTableProps) => {
               <TableHead className="w-40">Active</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Items</TableHead>
+              <TableHead>Duration (ms)</TableHead>
               <TableHead>Error</TableHead>
               <TableHead>Created At</TableHead>
             </TableRow>
@@ -51,7 +52,7 @@ export const OrderTable = ({ orders, lastRefreshed }: OrderTableProps) => {
           <TableBody>
             {displayedOrders.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center">
+                <TableCell colSpan={7} className="text-center">
                   No orders found
                 </TableCell>
               </TableRow>
@@ -59,6 +60,12 @@ export const OrderTable = ({ orders, lastRefreshed }: OrderTableProps) => {
               displayedOrders.map((order) => {
                 const isProcessing =
                   order.status === OrderStatus.PENDING || order.status === OrderStatus.PROCESSING;
+
+                // Calculate duration in milliseconds
+                const durationMs = order.completedAt
+                  ? new Date(order.completedAt).getTime() - new Date(order.createdAt).getTime()
+                  : null;
+
                 return (
                   <TableRow key={order.id}>
                     <TableCell className="font-mono text-xs">{order.id}</TableCell>
@@ -80,6 +87,14 @@ export const OrderTable = ({ orders, lastRefreshed }: OrderTableProps) => {
                           {item.product} x{item.quantity}
                         </div>
                       ))}
+                    </TableCell>
+
+                    <TableCell>
+                      {durationMs !== null ? (
+                        <span className="text-sm">{durationMs}</span>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       {order.errorMessage ? (

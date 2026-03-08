@@ -22,6 +22,7 @@ export interface Order {
   items: OrderItem[];
   status: OrderStatus;
   createdAt: string;
+  completedAt?: string; // When the order reached a final status (COMPLETED/CANCELLED)
   errorMessage?: string; // Error message when order fails
   paymentBehaviour?: "success" | "failure" | "random"; // For testing failure scenarios
   inventoryBehaviour?: "success" | "failure" | "random"; // For testing failure scenarios
