@@ -112,6 +112,10 @@ This system uses **RabbitMQ topic exchanges** for true pub/sub choreography:
 
 This project has automated testing made with Bun, which are run automatically in Pull Requests, or manually by `bun run test`. If you want to test manually, I recommend testing via the UI as it gives the best overview of the system.
 
+### Benchmarking
+
+See `benchmark/README.md` for instructions on running performance benchmarks against the system, both locally and in GKE.
+
 ### Happy path
 
 Happy path (=successful) is the scenario when everything goes fine: user creates an order, there's inventory and payment succeeds. See instructions in `services/order-service` how to run.

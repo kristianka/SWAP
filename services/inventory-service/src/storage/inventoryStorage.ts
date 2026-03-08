@@ -271,11 +271,14 @@ export const getAllProducts = async (sessionId: string) => {
  * Seed initial product data (for testing/demo purposes)
  */
 export const seedProducts = async (sessionId: string) => {
+  // Use high stock levels for benchmarking
+  const isBenchmark = sessionId === "benchmark";
+
   const products = [
-    { id: "laptop", name: "Gaming Laptop", stock_level: 5 },
-    { id: "mouse", name: "Wireless Mouse", stock_level: 67 },
-    { id: "keyboard", name: "Mechanical Keyboard", stock_level: 21 },
-    { id: "monitor", name: "4K Monitor", stock_level: 15 },
+    { id: "laptop", name: "Gaming Laptop", stock_level: isBenchmark ? 999 : 5 },
+    { id: "mouse", name: "Wireless Mouse", stock_level: isBenchmark ? 999 : 67 },
+    { id: "keyboard", name: "Mechanical Keyboard", stock_level: isBenchmark ? 999 : 21 },
+    { id: "monitor", name: "4K Monitor", stock_level: isBenchmark ? 999 : 15 },
   ];
 
   for (const product of products) {

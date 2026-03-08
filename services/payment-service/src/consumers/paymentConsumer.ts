@@ -39,5 +39,5 @@ export const startPaymentConsumer = async (channel: Channel) => {
     }
   });
 
-  console.log("💳 Payment Service listening for inventory reservations...");
+  console.log("Payment Service listening for inventory reservations...");
 };

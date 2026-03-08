@@ -1,0 +1,37 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: swap-benchmark
+  namespace: swap
+spec:
+  # Auto-delete after 2 hours
+  ttlSecondsAfterFinished: 7200
+  template:
+    metadata:
+      labels:
+        app: swap-benchmark
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: benchmark
+          image: gcr.io/YOUR_PROJECT_ID/swap-benchmark:latest
+          env:
+            - name: ORDER_SERVICE_URL
+              value: "http://order-service:3001"
+          args:
+            - "--orders"
+            - "100"
+            - "--concurrency"
+            - "10"
+            - "--behaviour"
+            - "success"
+            - "--product-ids"
+            - "laptop,mouse,keyboard,monitor"
+            - "--skip-delays"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
