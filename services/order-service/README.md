@@ -11,7 +11,7 @@ bun run dev
 
 ## API Endpoints
 
-**Note:** All endpoints require `x-session-id` header for data isolation.
+**Note:** Requires `x-session-id` header.
 
 ### Get Orders
 
@@ -46,17 +46,10 @@ Resets all orders for the specified session (testing purposes).
 
 ## Database
 
-The order service maintains two tables:
+- **orders** - Order records with composite primary key `(id, session_id)`
+- **processed_events** - Idempotency tracking
 
-- **orders** - Stores order records with composite primary key `(id, session_id)` for isolation
-- **processed_events** - Idempotency tracking to prevent duplicate processing
-
-### Session Isolation
-
-- Composite primary key `(id, session_id)` ensures data isolation
-- All queries filter by `session_id` from request headers or events
-- Session ID propagates through entire saga via event correlation
-- Each user session maintains independent order history
+See main [README](../../README.md#session-isolation) for session isolation details.
 
 ## Saga Choreography
 
