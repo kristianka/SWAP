@@ -25,6 +25,8 @@ spec:
             - "10"
             - "--behaviour"
             - "success"
+            - "--product-ids"
+            - "laptop,mouse,keyboard,monitor"
             - "--skip-delays"
           resources:
             requests:
