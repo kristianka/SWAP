@@ -23,8 +23,13 @@ import { metrics, printStats } from "./metrics.js";
 import { processSingleOrder } from "./order-operations.js";
 
 async function seedInventory(baseUrl: string): Promise<void> {
-  // Convert order service URL (port 3001) to inventory service URL (port 3002)
-  const inventoryUrl = baseUrl.replace(/:3001/, ":3002");
+  // Convert order service URL to inventory service URL
+  // http://order-service-svc:3001 -> http://inventory-service-svc:3002
+  // http://localhost:3001 -> http://localhost:3002
+  const inventoryUrl = baseUrl
+    .replace(/order-service-svc:3001/, "inventory-service-svc:3002")
+    .replace(/order-service:3001/, "inventory-service:3002")
+    .replace(/:3001/, ":3002");
   const seedUrl = `${inventoryUrl}/inventory/seed`;
 
   console.log("Seeding inventory...");

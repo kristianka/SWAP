@@ -31,3 +31,16 @@ kubectl logs -f job/swap-benchmark -n swap
 ```
 
 **Options:** Edit `manifests/benchmark-job.yaml` args section to change orders, concurrency, product IDs, etc.
+
+**Troubleshooting:**
+
+```bash
+# Check pod status
+kubectl get pods -n swap -l job-name=swap-benchmark
+
+# If stuck in ContainerCreating, describe for details
+kubectl describe pod -l job-name=swap-benchmark -n swap
+
+# View full job logs after completion
+kubectl logs -l job-name=swap-benchmark -n swap --tail=-1
+```
