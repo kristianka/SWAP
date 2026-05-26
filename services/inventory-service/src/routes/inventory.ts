@@ -7,14 +7,19 @@ import {
 } from "../storage/inventoryStorage";
 
 export async function registerInventoryRoutes(app: FastifyInstance) {
-  // Get all products with stock levels
+  // Get all products with stock levels.
   app.get("/inventory", async (req, reply) => {
     const sessionId = req.headers["x-session-id"] as string;
     if (!sessionId) {
       reply.status(400);
       return { error: "Missing x-session-id header" };
     }
-    return getAllProducts(sessionId);
+    const products = await getAllProducts(sessionId);
+    // if error due to no products, seed db
+    if (products.length === 0) {
+      return seedProducts(sessionId);
+    }
+    return products;
   });
 
   // Seed initial product data (for testing/demo)

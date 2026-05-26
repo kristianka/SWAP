@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Input } from "./ui/input";
@@ -19,12 +19,16 @@ interface SelectedItem {
 }
 
 interface OrderCreationCardProps {
+  inventory: InventoryItem[];
   onOrderCreated: () => void;
   onSuccess: (message: string) => void;
 }
 
-export const OrderCreationCard = ({ onOrderCreated, onSuccess }: OrderCreationCardProps) => {
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+export const OrderCreationCard = ({
+  inventory,
+  onOrderCreated,
+  onSuccess,
+}: OrderCreationCardProps) => {
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [polling, setPolling] = useState(false);
@@ -38,27 +42,6 @@ export const OrderCreationCard = ({ onOrderCreated, onSuccess }: OrderCreationCa
     "success",
   );
   const [skipDemoDelays, setSkipDemoDelays] = useState(false);
-
-  const fetchInventory = async () => {
-    const response = await api.fetchInventory();
-    if (response.error) {
-      console.error("Failed to fetch inventory:", response.error);
-    } else {
-      setInventory(response.data);
-    }
-  };
-
-  useEffect(() => {
-    // Fetch inventory on mount
-    (async () => {
-      const response = await api.fetchInventory();
-      if (response.error) {
-        console.error("Failed to fetch inventory:", response.error);
-      } else {
-        setInventory(response.data);
-      }
-    })();
-  }, []);
 
   const getItemQuantity = (itemId: string) => {
     return selectedItems.find((i) => i.product === itemId)?.quantity || 0;
@@ -120,8 +103,7 @@ export const OrderCreationCard = ({ onOrderCreated, onSuccess }: OrderCreationCa
     } else {
       onSuccess("Order created successfully! Watch the tables update.");
       setSelectedItems([]);
-      onOrderCreated();
-      fetchInventory(); // Refresh inventory to show updated available counts
+      onOrderCreated(); // Refreshes shared inventory (and orders/payments) to show updated counts
 
       // Start polling every 500ms for 10 seconds
       setPolling(true);

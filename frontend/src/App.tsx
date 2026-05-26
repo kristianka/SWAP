@@ -15,7 +15,7 @@ function App() {
   const [sessionId, setSessionId] = useState(getOrCreateSessionId());
 
   const handleRegenerateSession = async () => {
-    const newSessionId = await regenerateSessionId();
+    const newSessionId = regenerateSessionId();
     setSessionId(newSessionId);
     await fetchAllData();
     setSuccessMessage("New session created and inventory seeded! Your data is now isolated.");
@@ -35,7 +35,11 @@ function App() {
 
         <div className="grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-6">
           <div className="space-y-4">
-            <OrderCreationCard onOrderCreated={fetchAllData} onSuccess={setSuccessMessage} />
+            <OrderCreationCard
+              inventory={inventory}
+              onOrderCreated={fetchAllData}
+              onSuccess={setSuccessMessage}
+            />
             {/* <SeedItems onSeedComplete={fetchAllData} /> */}
           </div>
 
