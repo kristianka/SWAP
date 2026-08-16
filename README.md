@@ -232,9 +232,9 @@ gcloud compute addresses describe swap-static-ip --global --format="get(address)
 
 ## Session Isolation
 
-We use **session-based data isolation** to support multiple concurrent users in public demos without data conflicts.
+The system utilises **session-based data isolation** to support multiple concurrent users in public demos without data conflicts.
 
-### How It Works
+### Features
 
 - Each user gets a unique session ID (UUID) stored in browser localStorage
 - All database tables include a `session_id` column with composite primary keys
