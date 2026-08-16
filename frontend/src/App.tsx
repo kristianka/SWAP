@@ -22,7 +22,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen m-8">
+    <div className="min-h-screen m-8 pb-28">
       <div className=" mx-auto">
         <Header
           lastRefreshed={lastRefreshed}

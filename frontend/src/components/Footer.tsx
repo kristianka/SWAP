@@ -3,7 +3,7 @@ import { ArrowUpRight } from "lucide-react";
 export const Footer = () => {
   // icons by claude
   return (
-    <footer className="text-white py-6 mt-8">
+    <footer className="fixed bottom-0 left-0 right-0 z-40 bg-background text-white py-4">
       <div className="container mx-auto px-4">
         <div className="flex flex-col items-center gap-4">
           <div className="flex items-center gap-6">

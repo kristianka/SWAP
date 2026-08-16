@@ -175,7 +175,7 @@ export const OrderCreationCard = ({
                           type="number"
                           value={quantity}
                           readOnly
-                          className="w-16 text-center"
+                          className="w-16 text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                         />
                         <Button
                           size="sm"
