@@ -13,52 +13,23 @@ export interface ApiResponse<T> {
 
 // Session management
 const SESSION_KEY = "swap-demo-session-id";
-const SESSION_SEEDED_KEY = "swap-demo-session-seeded";
 
-// Auto-seed inventory for new sessions
-const autoSeedInventory = async (sessionId: string): Promise<void> => {
-  try {
-    const response = await fetch(`${API_BASE_URLS.inventory}/inventory/seed`, {
-      method: "POST",
-      headers: {
-        "x-session-id": sessionId,
-      },
-    });
-    if (response.ok) {
-      console.log("Inventory automatically seeded for session:", sessionId);
-      localStorage.setItem(SESSION_SEEDED_KEY, sessionId);
-    } else {
-      console.error("Failed to auto-seed inventory:", response.statusText);
-    }
-  } catch (error) {
-    console.error("Failed to auto-seed inventory:", error);
-  }
-};
-
+// Inventory is seeded lazily by the backend on the first GET /inventory for a
+// session, so the frontend only needs to create and persist a session ID.
 export const getOrCreateSessionId = (): string => {
   let sessionId = localStorage.getItem(SESSION_KEY);
-  const seededSessionId = localStorage.getItem(SESSION_SEEDED_KEY);
 
   if (!sessionId) {
     sessionId = crypto.randomUUID();
     localStorage.setItem(SESSION_KEY, sessionId);
-    // Auto-seed for new session
-    autoSeedInventory(sessionId);
-  } else if (sessionId !== seededSessionId) {
-    // Session exists but hasn't been seeded yet
-    autoSeedInventory(sessionId);
   }
 
   return sessionId;
 };
 
-export const regenerateSessionId = async (): Promise<string> => {
+export const regenerateSessionId = (): string => {
   const sessionId = crypto.randomUUID();
   localStorage.setItem(SESSION_KEY, sessionId);
-  // Clear seeded flag to trigger auto-seed
-  localStorage.removeItem(SESSION_SEEDED_KEY);
-  // Auto-seed the new session
-  await autoSeedInventory(sessionId);
   return sessionId;
 };
 

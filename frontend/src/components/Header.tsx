@@ -27,6 +27,17 @@ export const Header = ({
           <p className="text-gray-400">
             Distributed transaction management with RabbitMQ and the Saga pattern
           </p>
+          <p className="text-gray-400">
+            Check the {""}
+            <a
+              href="https://github.com/kristianka/SWAP"
+              target="_blank"
+              className="underline hover:opacity-70"
+            >
+              GitHub repository
+            </a>
+            {""} for details on the architecture!
+          </p>
         </div>
 
         <div className="hidden md:block">

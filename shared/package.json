@@ -8,7 +8,8 @@
     ".": "./src/index.ts",
     "./constants": "./src/constants.ts",
     "./types": "./src/types.ts",
-    "./rabbitmq": "./src/rabbitmq.ts"
+    "./rabbitmq": "./src/rabbitmq.ts",
+    "./testUtils": "./src/testUtils.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
