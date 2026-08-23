@@ -10,15 +10,26 @@ import { Footer } from "./components/Footer";
 import { getOrCreateSessionId, regenerateSessionId } from "./lib/api";
 
 function App() {
-  const { orders, inventory, payments, lastRefreshed, messages, fetchAllData, setSuccessMessage } =
-    useAppData();
+  const {
+    orders,
+    inventory,
+    payments,
+    inventoryStatus,
+    lastRefreshed,
+    messages,
+    fetchAllData,
+    setSuccessMessage,
+  } = useAppData();
   const [sessionId, setSessionId] = useState(getOrCreateSessionId());
 
   const handleRegenerateSession = async () => {
     const newSessionId = regenerateSessionId();
     setSessionId(newSessionId);
-    await fetchAllData();
-    setSuccessMessage("New session created and inventory seeded! Your data is now isolated.");
+    const ok = await fetchAllData();
+    // On failure fetchAllData has already surfaced the error message
+    if (ok) {
+      setSuccessMessage("New session created and inventory seeded! Your data is now isolated.");
+    }
   };
 
   return (
@@ -37,6 +48,7 @@ function App() {
           <div className="space-y-4">
             <OrderCreationCard
               inventory={inventory}
+              inventoryStatus={inventoryStatus}
               onOrderCreated={fetchAllData}
               onSuccess={setSuccessMessage}
             />

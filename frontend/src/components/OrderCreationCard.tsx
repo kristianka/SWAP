@@ -7,6 +7,7 @@ import { Spinner } from "./ui/spinner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 import { type InventoryItem } from "@swap/shared";
 import { api } from "../lib/api";
+import { type InventoryStatus } from "../hooks/useAppData";
 import { BehaviourSelect } from "./BehaviourSelect";
 import { Checkbox } from "./ui/checkbox";
 import { Label } from "./ui/label";
@@ -20,12 +21,14 @@ interface SelectedItem {
 
 interface OrderCreationCardProps {
   inventory: InventoryItem[];
+  inventoryStatus: InventoryStatus;
   onOrderCreated: () => void;
   onSuccess: (message: string) => void;
 }
 
 export const OrderCreationCard = ({
   inventory,
+  inventoryStatus,
   onOrderCreated,
   onSuccess,
 }: OrderCreationCardProps) => {
@@ -138,7 +141,16 @@ export const OrderCreationCard = ({
           <h3 className="text-sm font-semibold mb-3">Items</h3>
           <div className="space-y-2 max-h-[600px] overflow-y-auto">
             {inventory.length === 0 ? (
-              <p className="text-sm text-gray-400">No items available</p>
+              inventoryStatus === "loading" ? (
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <Spinner />
+                  Loading items...
+                </div>
+              ) : inventoryStatus === "error" ? (
+                <p className="text-sm text-red-500">Failed to load items. Retrying...</p>
+              ) : (
+                <p className="text-sm text-gray-400">No items available</p>
+              )
             ) : (
               inventory.map((item) => {
                 const quantity = getItemQuantity(item.id);
