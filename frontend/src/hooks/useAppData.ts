@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { type Order, type InventoryItem, type Payment } from "@swap/shared";
 import { api } from "../lib/api";
 
@@ -10,70 +10,72 @@ interface Messages {
   error: string | null;
 }
 
+export type InventoryStatus = "loading" | "ready" | "error";
+
 export const useAppData = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [inventoryStatus, setInventoryStatus] = useState<InventoryStatus>("loading");
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [messages, setMessages] = useState<Messages>({
     success: null,
     error: null,
   });
 
-  const fetchAllData = async () => {
+  const fetchSeqRef = useRef(0);
+
+  const fetchAllData = useCallback(async (): Promise<boolean> => {
+    const seq = ++fetchSeqRef.current;
     const [ordersResponse, inventoryResponse, paymentsResponse] = await api.fetchAllData();
 
-    setOrders(ordersResponse.data);
-    setInventory(inventoryResponse.data);
-    setPayments(paymentsResponse.data);
-    setLastRefreshed(new Date());
-
-    // Collect any errors
     const errors = [ordersResponse.error, inventoryResponse.error, paymentsResponse.error].filter(
       Boolean,
     );
 
-    if (errors.length > 0) {
-      setMessages({
-        success: null,
-        error: errors.join("; "),
-      });
-    } else {
-      // Clear any previous error messages on successful fetch
-      setMessages((prev) => ({ ...prev, error: null }));
+    // A newer fetch has taken over while this one was in flight; drop this stale response
+    if (seq !== fetchSeqRef.current) {
+      return errors.length === 0;
     }
-  };
 
-  const setSuccessMessage = (message: string) => {
-    setMessages({
-      success: message,
-      error: null,
-    });
-    // Auto-clear success message after 3 seconds
+    // Keep the previous data when a fetch fails instead of blanking the UI
+    if (!ordersResponse.error) {
+      setOrders(ordersResponse.data);
+    }
+
+    if (!inventoryResponse.error) {
+      setInventory(inventoryResponse.data);
+    }
+
+    if (!paymentsResponse.error) {
+      setPayments(paymentsResponse.data);
+    }
+
+    setInventoryStatus(inventoryResponse.error ? "error" : "ready");
+    setLastRefreshed(new Date());
+
+    if (errors.length > 0) {
+      setMessages((prev) => ({ ...prev, error: errors.join("; ") }));
+      return false;
+    }
+
+    // Clear any previous error messages on successful fetch
+    setMessages((prev) => ({ ...prev, error: null }));
+    return true;
+  }, []);
+
+  const setSuccessMessage = useCallback((message: string) => {
+    setMessages((prev) => ({ ...prev, success: message }));
+    // Auto-clear success message after a few seconds
     setTimeout(() => {
       setMessages((prev) => ({ ...prev, success: null }));
     }, SUCCESS_MESSAGE_DURATION_MS);
-  };
+  }, []);
 
   useEffect(() => {
     // Initial fetch
     (async () => {
-      const [ordersResponse, inventoryResponse, paymentsResponse] = await api.fetchAllData();
-      setOrders(ordersResponse.data);
-      setInventory(inventoryResponse.data);
-      setPayments(paymentsResponse.data);
-
-      // Show errors from initial load if any
-      const errors = [ordersResponse.error, inventoryResponse.error, paymentsResponse.error].filter(
-        Boolean,
-      );
-
-      if (errors.length > 0) {
-        setMessages({
-          success: null,
-          error: errors.join("; "),
-        });
-      }
+      await fetchAllData();
     })();
 
     // Set up auto-refresh every 10 seconds
@@ -83,12 +85,13 @@ export const useAppData = () => {
 
     // Cleanup interval on unmount
     return () => clearInterval(intervalId);
-  }, []);
+  }, [fetchAllData]);
 
   return {
     orders,
     inventory,
     payments,
+    inventoryStatus,
     lastRefreshed,
     messages,
     fetchAllData,
